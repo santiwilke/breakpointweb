@@ -1236,7 +1236,8 @@
 
 <script>
 const WA = '541135871933';
-const SHEETS = 'https://docs.google.com/spreadsheets/d/TU_SHEET_ID/gviz/tq?tqx=out:csv&sheet=';
+const SHEET_DISP_URL   = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTkDmKkZBINb-bWxqZLAX4IC4EliStJw_aTl0IySwBDSYAbGs4erlDIIof2_DEjCULw_ysqmbvjH1xk/pub?gid=1984367544&single=true&output=csv';
+const SHEET_PRECIO_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTkDmKkZBINb-bWxqZLAX4IC4EliStJw_aTl0IySwBDSYAbGs4erlDIIof2_DEjCULw_ysqmbvjH1xk/pub?gid=885062991&single=true&output=csv';
 
 function toggleNav() { document.getElementById('navLinks').classList.toggle('open'); }
 document.querySelectorAll('.nav-links a').forEach(a => a.addEventListener('click', () => document.getElementById('navLinks').classList.remove('open')));
@@ -1247,6 +1248,8 @@ const todayStr = new Date().toISOString().split('T')[0];
 // Estado global — hora es numérico (ej. 8, 8.5, 9 ...)
 const bk = { cancha: null, fecha: todayStr, hora: null, duracion: null };
 let sheetCache = {};
+let monthData  = null;   // datos del mes completo cargados de SHEET_DISP_URL
+let precio     = 50000;  // fallback; se pisa con el valor del sheet
 
 const CLOSING_HOUR = 26; // 02:00 AM en notación extendida
 
@@ -1277,8 +1280,7 @@ function getHoras(f) {
 }
 
 function sheetKey(h) {
-  // El sheet solo tiene claves :00, las medias horas usan la misma clave
-  return fmtSlot(Math.floor(h));
+  return fmtSlot(h);
 }
 
 function allCanchasOccupied(sheetData, h) {
@@ -1354,24 +1356,60 @@ function checkNext1() {
   document.getElementById('next1').disabled = !(bk.hora !== null && bk.duracion !== null);
 }
 
+async function fetchPrecio() {
+  try {
+    const r = await fetch(SHEET_PRECIO_URL);
+    if (!r.ok) return;
+    const txt = await r.text();
+    const lines = txt.trim().split('\n');
+    for (let i = 1; i < lines.length; i++) {
+      const cols = lines[i].split(',').map(c => c.replace(/^"|"$/g,'').trim());
+      if (cols[0] === 'padel') {
+        const p = parseFloat(cols[2]);
+        if (!isNaN(p) && p > 0) precio = p;
+        break;
+      }
+    }
+    // Actualiza los precios visibles en la sección Canchas
+    document.querySelectorAll('.cancha-precio').forEach(el => {
+      el.innerHTML = formatPrice(precio) + ' <small>/ hora</small>';
+    });
+  } catch {}
+}
+
 async function fetchSheetData(fecha) {
   if (sheetCache[fecha]) return sheetCache[fecha];
-  const r = await fetch(SHEETS + encodeURIComponent(fecha));
-  if (!r.ok) throw new Error('no sheet');
-  const txt = await r.text();
-  // Parsear: data[hora][cancha] = true si ocupado
-  const data = {};
-  txt.trim().split('\n').slice(1).forEach(line => {
-    const cols = line.split(',').map(c => c.replace(/^"|"$/g,'').trim());
-    const hora = cols[0];
-    if (!hora) return;
-    data[hora] = {};
-    for (let c = 1; c <= 4; c++) {
-      data[hora][c] = ['OCUPADO','X','1'].includes((cols[c]||'').toUpperCase());
-    }
-  });
-  sheetCache[fecha] = data;
-  return data;
+
+  // Carga el mes completo una sola vez desde SHEET_DISP_URL
+  if (!monthData) {
+    const r = await fetch(SHEET_DISP_URL);
+    if (!r.ok) throw new Error('no sheet');
+    const txt = await r.text();
+    const lines = txt.trim().split('\n');
+    const header = lines[0].split(',').map(c => c.replace(/^"|"$/g,'').trim());
+    // header: CANCHA_ID, CANCHA, TIPO, HORA, 1, 2, ..., 31
+
+    monthData = {}; // monthData[dia][hora][canchaNum] = bool
+    lines.slice(1).forEach(line => {
+      const cols = line.split(',').map(c => c.replace(/^"|"$/g,'').trim());
+      const hora   = cols[3];
+      const nombre = cols[1];
+      if (!hora || !nombre) return;
+      const canchaNum = parseInt(nombre.replace('Cancha ', ''), 10);
+      if (!canchaNum) return;
+      for (let i = 4; i < header.length; i++) {
+        const dia = parseInt(header[i], 10);
+        if (!dia) continue;
+        if (!monthData[dia])        monthData[dia] = {};
+        if (!monthData[dia][hora])  monthData[dia][hora] = {};
+        monthData[dia][hora][canchaNum] = ['X','OCUPADO','1'].includes((cols[i]||'').toUpperCase().trim());
+      }
+    });
+  }
+
+  const dia = parseInt(fecha.split('-')[2], 10);
+  sheetCache[fecha] = monthData[dia] || {};
+  return sheetCache[fecha];
 }
 
 // Render sincrónico — usa sheetCache ya poblado
@@ -1514,7 +1552,7 @@ function fillSummary() {
   document.getElementById('sf').textContent = `${dias[d.getDay()]} ${d.getDate()}/${d.getMonth()+1}/${d.getFullYear()}`;
   document.getElementById('sh').textContent = `${fmtSlot(bk.hora)} — ${end} hs`;
   document.getElementById('sdur').textContent = durLabel;
-  document.getElementById('stotal').textContent = formatPrice(50000 * bk.duracion);
+  document.getElementById('stotal').textContent = formatPrice(precio * bk.duracion);
 }
 
 function checkWa() { document.getElementById('btnwa').disabled = document.getElementById('nombre').value.trim().length < 2; }
@@ -1524,7 +1562,7 @@ function sendWa() {
   const d = new Date(bk.fecha + 'T12:00:00');
   const end = calcEndTime(bk.hora, bk.duracion);
   const durLabel = bk.duracion === 1 ? '1 hora' : bk.duracion === 1.5 ? '1 hora y media' : bk.duracion === 2 ? '2 horas' : bk.duracion === 2.5 ? '2 horas y media' : '3 horas';
-  const msg = `Hola! Quiero reservar en Break Point Padel.\n\nCancha: ${bk.cancha}\nFecha: ${d.getDate()}/${d.getMonth()+1}/${d.getFullYear()}\nHorario: ${fmtSlot(bk.hora)} — ${end} hs (${durLabel})\nTotal: ${formatPrice(50000 * bk.duracion)}\nNombre: ${nombre}\n\n¿Está disponible?`;
+  const msg = `Hola! Quiero reservar en Break Point Padel.\n\nCancha: ${bk.cancha}\nFecha: ${d.getDate()}/${d.getMonth()+1}/${d.getFullYear()}\nHorario: ${fmtSlot(bk.hora)} — ${end} hs (${durLabel})\nTotal: ${formatPrice(precio * bk.duracion)}\nNombre: ${nombre}\n\n¿Está disponible?`;
   window.open(`https://wa.me/${WA}?text=${encodeURIComponent(msg)}`, '_blank');
 }
 
@@ -1547,11 +1585,10 @@ async function loadDisp() {
 
   tbody.innerHTML = [1,2,3,4].map(c => {
     const cells = horas.map(h => {
-      const key = h.endsWith(':30') ? h.replace(':30',':00') : h;
       const [slotH, slotM] = h.split(':').map(Number);
       const past = isToday && (slotH * 60 + slotM) <= nowTotal;
       if (past) return `<td><span class="cell-past">—</span></td>`;
-      const ocupado = sheetData && sheetData[key] && sheetData[key][c];
+      const ocupado = sheetData && sheetData[h] && sheetData[h][c];
       return ocupado
         ? `<td><span class="cell-ocupado">✕</span></td>`
         : `<td><span class="cell-libre">✓</span></td>`;
@@ -1561,6 +1598,7 @@ async function loadDisp() {
 }
 
 // Init
+fetchPrecio();
 renderHoras();
 loadDisp();
 // ── SCROLL REVEAL ──────────────────────────────────────
