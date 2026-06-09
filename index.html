@@ -786,6 +786,10 @@
       0%,100% { box-shadow: 0 2px 16px rgba(13,37,72,0); }
       50%      { box-shadow: 0 2px 16px rgba(13,37,72,0.4); }
     }
+    @keyframes spin-icon {
+      from { transform: rotate(0deg); }
+      to   { transform: rotate(360deg); }
+    }
     @keyframes heroGlow {
       0%,100% { opacity: .06; }
       50%      { opacity: .13; }
@@ -1206,6 +1210,10 @@
     <div class="leyenda">
       <div class="ley-item"><div class="ley-dot libre"></div>Libre</div>
       <div class="ley-item"><div class="ley-dot ocupado"></div>Ocupado</div>
+      <button id="btn-refresh-disp" onclick="refreshDisp()" style="margin-left:auto;display:flex;align-items:center;gap:6px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.18);color:rgba(255,255,255,0.7);font-family:inherit;font-size:0.78rem;font-weight:600;padding:5px 12px;border-radius:7px;cursor:pointer;transition:background .2s,color .2s;">
+        <svg id="refresh-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+        Actualizar
+      </button>
     </div>
   </div>
 </section>
@@ -1872,16 +1880,20 @@ async function loadDisp() {
   let sheetData = null;
   try { sheetData = await fetchSheetData(fecha); } catch {}
 
-  const nowTotal = new Date().getHours() * 60 + new Date().getMinutes();
+  const nowVal = new Date().getHours() + new Date().getMinutes() / 60;
   const isToday = fecha === todayStr;
-  const horas = getHoras(fecha);
+  // Usamos slots numéricos para comparar correctamente (00:00 = hora 24, no 0)
+  const numSlots = getNumericSlots(fecha);
+  const horas = numSlots.map(fmtSlot);
 
   dhead.innerHTML = '<th>Cancha</th>' + horas.map(h => `<th>${h}</th>`).join('');
 
   tbody.innerHTML = [1,2,3,4].map(c => {
-    const cells = horas.map(h => {
-      const [slotH, slotM] = h.split(':').map(Number);
-      const past = isToday && (slotH * 60 + slotM) <= nowTotal;
+    const cells = numSlots.map((numH, i) => {
+      const h = horas[i];
+      // numH puede ser 24, 24.5, 25... — comparar directo con nowVal extendido
+      const nowExtended = nowVal < 8 ? nowVal + 24 : nowVal; // si son las 01:00 AM = 25
+      const past = isToday && numH <= nowExtended;
       if (past) return `<td><span class="cell-past">—</span></td>`;
       const ocupado = sheetData && sheetData[h] && sheetData[h][c];
       return ocupado
@@ -1890,6 +1902,20 @@ async function loadDisp() {
     }).join('');
     return `<tr><td>Cancha ${c}</td>${cells}</tr>`;
   }).join('');
+}
+
+async function refreshDisp() {
+  const btn = document.getElementById('btn-refresh-disp');
+  const icon = document.getElementById('refresh-icon');
+  btn.disabled = true;
+  icon.style.animation = 'spin-icon .7s linear infinite';
+  // Limpiar cache para forzar re-fetch
+  const fecha = document.getElementById('dfecha').value;
+  delete sheetCache[fecha];
+  monthData = null;
+  await loadDisp();
+  btn.disabled = false;
+  icon.style.animation = '';
 }
 
 // Init
