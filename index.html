@@ -1678,7 +1678,7 @@ async function fetchSheetData(fecha) {
 
     lines.slice(1).forEach(line => {
       const cols = line.split(',').map(c => c.replace(/^"|"$/g,'').trim());
-      const hora   = cols[3];
+      const hora   = (cols[3] || '').replace(/^(\d):/, '0$1:'); // normaliza "0:00" → "00:00"
       const nombre = cols[1];
       if (!hora || !nombre) return;
       const canchaNum = parseInt(nombre.replace('Cancha ', ''), 10);
