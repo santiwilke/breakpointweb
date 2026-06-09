@@ -1504,8 +1504,8 @@ const todayStr = new Date().toISOString().split('T')[0];
 
 // Estado global — hora es numérico (ej. 8, 8.5, 9 ...)
 const bk = { cancha: null, fecha: todayStr, hora: null, duracion: null };
-let sheetCache = {};
-let monthData  = null;   // datos del mes completo cargados de SHEET_DISP_URL
+let sheetCache  = {};
+let monthCache  = {};    // monthCache["2026-06"] = datos del mes completo
 let precio     = 50000;  // fallback; se pisa con el valor del sheet
 
 const CLOSING_HOUR = 26; // 02:00 AM en notación extendida
@@ -1699,49 +1699,44 @@ function _normalizeHora(raw) {
 async function fetchSheetData(fecha) {
   if (sheetCache[fecha]) return sheetCache[fecha];
 
-  // Carga el mes completo una sola vez, usando la hoja del mes correspondiente
-  if (!monthData) {
-    const r = await fetch(getSheetDispUrl(fecha), { cache: 'no-store' });
-    if (!r.ok) throw new Error('no sheet');
-    const txt = await r.text();
-    const lines = txt.trim().split('\n');
-    const header = lines[0].split(',').map(c => c.replace(/^"|"$/g,'').trim());
-    // header: CANCHA_ID, CANCHA, TIPO, HORA, 1, 2, ..., 31
+  const ym  = fecha.slice(0, 7); // "YYYY-MM"
+  const dia = parseInt(fecha.split('-')[2], 10);
 
-    // Guardamos el año-mes del sheet para validar fechas de otros meses
-    const now = new Date();
-    monthData = {};
-    monthData._yearMonth = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2,'0');
-
-    lines.slice(1).forEach(line => {
-      const cols = line.split(',').map(c => c.replace(/^"|"$/g,'').trim());
-      const hora   = _normalizeHora(cols[3] || '');
-      const nombre = cols[1];
-      if (!hora || !nombre) return;
-      const canchaNum = parseInt(nombre.replace('Cancha ', ''), 10);
-      if (!canchaNum) return;
-      for (let i = 4; i < header.length; i++) {
-        const dia = parseInt(header[i], 10);
-        if (!dia) continue;
-        if (!monthData[dia])        monthData[dia] = {};
-        if (!monthData[dia][hora])  monthData[dia][hora] = {};
-        const v = (cols[i]||'').toUpperCase().trim();
-        if (v === 'X' || v === 'OCUPADO' || v === '1') monthData[dia][hora][canchaNum] = 'X';
-        else if (v === 'O') monthData[dia][hora][canchaNum] = 'O';
-        else monthData[dia][hora][canchaNum] = false;
-      }
-    });
-  }
-
-  // Si la fecha pertenece a un mes diferente al del sheet, no hay datos → todo libre
-  const fechaYearMonth = fecha.slice(0, 7); // "YYYY-MM"
-  if (fechaYearMonth !== monthData._yearMonth) {
-    sheetCache[fecha] = {};
+  // Si el mes ya está cargado, solo derivar el día
+  if (monthCache[ym]) {
+    sheetCache[fecha] = monthCache[ym][dia] || {};
     return sheetCache[fecha];
   }
 
-  const dia = parseInt(fecha.split('-')[2], 10);
-  sheetCache[fecha] = monthData[dia] || {};
+  // Fetch del mes completo
+  const r = await fetch(getSheetDispUrl(fecha), { cache: 'no-store' });
+  if (!r.ok) throw new Error('no sheet');
+  const txt  = await r.text();
+  const lines = txt.trim().split('\n');
+  const header = lines[0].split(',').map(c => c.replace(/^"|"$/g,'').trim());
+
+  const mesData = {};
+  lines.slice(1).forEach(line => {
+    const cols = line.split(',').map(c => c.replace(/^"|"$/g,'').trim());
+    const hora      = _normalizeHora(cols[3] || '');
+    const nombre    = cols[1];
+    if (!hora || !nombre) return;
+    const canchaNum = parseInt(nombre.replace('Cancha ', ''), 10);
+    if (!canchaNum) return;
+    for (let i = 4; i < header.length; i++) {
+      const d = parseInt(header[i], 10);
+      if (!d) continue;
+      if (!mesData[d])       mesData[d] = {};
+      if (!mesData[d][hora]) mesData[d][hora] = {};
+      const v = (cols[i]||'').toUpperCase().trim();
+      if      (v === 'X' || v === 'OCUPADO' || v === '1') mesData[d][hora][canchaNum] = 'X';
+      else if (v === 'O')                                  mesData[d][hora][canchaNum] = 'O';
+      else                                                 mesData[d][hora][canchaNum] = false;
+    }
+  });
+
+  monthCache[ym]   = mesData;
+  sheetCache[fecha] = mesData[dia] || {};
   return sheetCache[fecha];
 }
 
@@ -1917,9 +1912,8 @@ async function loadDisp() {
   const tbody = document.getElementById('dtbody');
   tbody.innerHTML = `<tr><td colspan="2"><div class="dispon-msg"><span class="spin"></span></div></td></tr>`;
 
-  // Siempre borrar cache para obtener datos frescos de Google Sheets
+  // Borrar cache de esta fecha para obtener datos frescos
   delete sheetCache[fecha];
-  monthData = null;
 
   let sheetData = null;
   try { sheetData = await fetchSheetData(fecha); } catch {}
@@ -1953,10 +1947,11 @@ async function refreshDisp() {
   const icon = document.getElementById('refresh-icon');
   btn.disabled = true;
   icon.style.animation = 'spin-icon .7s linear infinite';
-  // Limpiar cache para forzar re-fetch
+  // Limpiar todo el cache del mes para forzar re-fetch completo
   const fecha = document.getElementById('dfecha').value;
-  delete sheetCache[fecha];
-  monthData = null;
+  const ym = fecha.slice(0, 7);
+  delete monthCache[ym];
+  sheetCache = {};
   await loadDisp();
   btn.disabled = false;
   icon.style.animation = '';
