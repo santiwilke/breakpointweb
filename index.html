@@ -256,6 +256,19 @@
     .cancha-card:hover .cancha-reserva-overlay {
       opacity: 1; transform: translateY(0);
     }
+    @keyframes overlaySlideIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    @media (hover: none) {
+      .cancha-reserva-overlay {
+        opacity: 0; transform: translateY(8px);
+        transition: none;
+      }
+      .cancha-card.visible .cancha-reserva-overlay {
+        animation: overlaySlideIn .5s .3s cubic-bezier(.22,1,.36,1) forwards;
+      }
+    }
 
     .cancha-thumb {
       height: 200px; background: var(--crema-mid);
