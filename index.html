@@ -1524,7 +1524,9 @@ function goTo(step) {
 
 // ── STEP 1: Fecha + Hora + Duración ───────────────
 function onFecha() {
-  bk.fecha = document.getElementById('fecha').value;
+  const el = document.getElementById('fecha');
+  if (el.value < todayStr) { el.value = todayStr; }
+  bk.fecha = el.value;
   bk.hora = null;
   bk.duracion = null;
   bk.cancha = null;
@@ -1828,7 +1830,9 @@ function sendWa() {
 
 // ── TABLA DISPONIBILIDAD ───────────────────────────
 async function loadDisp() {
-  const fecha = document.getElementById('dfecha').value;
+  const elD = document.getElementById('dfecha');
+  if (elD.value < todayStr) { elD.value = todayStr; }
+  const fecha = elD.value;
   if (!fecha) return;
   const dhead = document.getElementById('dhead');
   const tbody = document.getElementById('dtbody');
