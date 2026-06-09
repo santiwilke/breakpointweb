@@ -1630,7 +1630,11 @@ async function fetchSheetData(fecha) {
     const header = lines[0].split(',').map(c => c.replace(/^"|"$/g,'').trim());
     // header: CANCHA_ID, CANCHA, TIPO, HORA, 1, 2, ..., 31
 
-    monthData = {}; // monthData[dia][hora][canchaNum] = bool
+    // Guardamos el año-mes del sheet para validar fechas de otros meses
+    const now = new Date();
+    monthData = {};
+    monthData._yearMonth = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2,'0');
+
     lines.slice(1).forEach(line => {
       const cols = line.split(',').map(c => c.replace(/^"|"$/g,'').trim());
       const hora   = cols[3];
@@ -1646,6 +1650,13 @@ async function fetchSheetData(fecha) {
         monthData[dia][hora][canchaNum] = ['X','OCUPADO','1'].includes((cols[i]||'').toUpperCase().trim());
       }
     });
+  }
+
+  // Si la fecha pertenece a un mes diferente al del sheet, no hay datos → todo libre
+  const fechaYearMonth = fecha.slice(0, 7); // "YYYY-MM"
+  if (fechaYearMonth !== monthData._yearMonth) {
+    sheetCache[fecha] = {};
+    return sheetCache[fecha];
   }
 
   const dia = parseInt(fecha.split('-')[2], 10);
