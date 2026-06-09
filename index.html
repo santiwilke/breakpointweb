@@ -235,9 +235,27 @@
       background: var(--blanco);
       border-radius: 12px; overflow: hidden;
       border: 1px solid var(--crema-borde);
-      transition: box-shadow .2s, transform .2s;
+      transition: box-shadow .25s, transform .25s;
+      text-decoration: none; display: block; cursor: pointer;
     }
-    .cancha-card:hover { box-shadow: 0 8px 28px rgba(37,99,176,0.12); transform: translateY(-3px); }
+    .cancha-card:hover { box-shadow: 0 12px 36px rgba(37,99,176,0.18); transform: translateY(-5px); }
+
+    .cancha-reserva-overlay {
+      position: absolute; bottom: 0; left: 0; right: 0;
+      padding: 0.6rem 1rem;
+      background: linear-gradient(to top, rgba(232,118,26,0.95) 0%, transparent 100%);
+      display: flex; align-items: flex-end; justify-content: center;
+      opacity: 0; transform: translateY(6px);
+      transition: opacity .25s, transform .25s;
+      pointer-events: none;
+    }
+    .cancha-reserva-overlay span {
+      color: var(--blanco); font-size: 0.82rem; font-weight: 700;
+      letter-spacing: 0.5px; padding-bottom: 0.4rem;
+    }
+    .cancha-card:hover .cancha-reserva-overlay {
+      opacity: 1; transform: translateY(0);
+    }
 
     .cancha-thumb {
       height: 200px; background: var(--crema-mid);
@@ -1899,11 +1917,27 @@ document.querySelectorAll('.btn, .nav-btn').forEach(btn => {
 
 // ── CARD SPOTLIGHT — mouse glow ─────────────────────
 document.querySelectorAll('.cancha-card').forEach(card => {
+  // Spotlight glow
   card.addEventListener('mousemove', function(e) {
     const r = this.getBoundingClientRect();
     this.style.setProperty('--mx', ((e.clientX - r.left) / r.width * 100) + '%');
     this.style.setProperty('--my', ((e.clientY - r.top) / r.height * 100) + '%');
   });
+
+  // Click → ir a reservas
+  card.style.cursor = 'pointer';
+  card.addEventListener('click', () => {
+    document.getElementById('reservas').scrollIntoView({ behavior: 'smooth' });
+  });
+
+  // Overlay "Reservá ya" sobre la foto
+  const thumb = card.querySelector('.cancha-thumb');
+  if (thumb) {
+    const overlay = document.createElement('div');
+    overlay.className = 'cancha-reserva-overlay';
+    overlay.innerHTML = '<span>Reservá ya →</span>';
+    thumb.appendChild(overlay);
+  }
 });
 
 // ── CONTADORES ANIMADOS en stats ─────────────────────
