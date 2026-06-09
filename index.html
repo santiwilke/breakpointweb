@@ -1877,6 +1877,10 @@ async function loadDisp() {
   const tbody = document.getElementById('dtbody');
   tbody.innerHTML = `<tr><td colspan="2"><div class="dispon-msg"><span class="spin"></span></div></td></tr>`;
 
+  // Siempre borrar cache para obtener datos frescos de Google Sheets
+  delete sheetCache[fecha];
+  monthData = null;
+
   let sheetData = null;
   try { sheetData = await fetchSheetData(fecha); } catch {}
 
@@ -2035,7 +2039,7 @@ const statsObserver = new IntersectionObserver((entries) => {
 const statsBand = document.querySelector('.stats-band');
 if (statsBand) statsObserver.observe(statsBand);
 
-// ── PARALLAX suave en hero ──────────────────────────
+// ── PARALLAX suave en hero ───────────────────────────
 const heroInner = document.querySelector('.hero-inner');
 if (heroInner) {
   window.addEventListener('scroll', () => {
