@@ -311,6 +311,12 @@
       color: var(--naranja); display: flex; align-items: center; gap: 6px;
       opacity: 0.8;
     }
+    @media (max-width: 520px) {
+      .servicio-item.featured {
+        flex-direction: column; align-items: flex-start; gap: 1rem;
+      }
+      .servicio-item.featured .servicio-cta { align-self: flex-end; }
+    }
 
     /* ── MENÚ — crema ── */
     #menu { background: var(--crema-mid); color: var(--crema-texto); }
@@ -390,6 +396,7 @@
       color: var(--crema-texto); padding: 0.72rem 1rem;
       font-family: inherit; font-size: 0.9rem; font-weight: 500;
       outline: none; transition: border-color .2s;
+      text-align: center;
     }
     .finput:focus { border-color: var(--azul); }
 
@@ -1434,7 +1441,16 @@ function toggleNav() { document.getElementById('navLinks').classList.toggle('ope
 document.querySelectorAll('.nav-links a').forEach(a => a.addEventListener('click', () => document.getElementById('navLinks').classList.remove('open')));
 
 const todayStr = new Date().toISOString().split('T')[0];
-['fecha','dfecha'].forEach(id => { const el = document.getElementById(id); if(el){ el.min = todayStr; el.value = todayStr; } });
+['fecha','dfecha'].forEach(id => {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.min = todayStr;
+  el.value = todayStr;
+  // iOS Safari ignora el atributo min — forzamos por código
+  el.addEventListener('change', function() {
+    if (this.value < todayStr) { this.value = todayStr; }
+  });
+});
 
 // Estado global — hora es numérico (ej. 8, 8.5, 9 ...)
 const bk = { cancha: null, fecha: todayStr, hora: null, duracion: null };
