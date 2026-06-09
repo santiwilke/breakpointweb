@@ -1667,6 +1667,32 @@ async function fetchPrecio() {
   } catch {}
 }
 
+function _normalizeHora(raw) {
+  // Acepta: "8:00", "08:00", "22:00:00", "10:00:00 PM", "10:00:00 p.m.", "0.916666..."
+  raw = raw.trim();
+  // Fracción decimal de Google Sheets (tiempo como número: 0.5 = 12:00)
+  if (/^0?\.\d+$/.test(raw) || (!isNaN(raw) && raw !== '' && Number(raw) < 1)) {
+    const mins = Math.round(Number(raw) * 24 * 60);
+    const h = Math.floor(mins / 60) % 24;
+    const m = mins % 60;
+    return String(h).padStart(2,'0') + ':' + String(m).padStart(2,'0');
+  }
+  // "10:00:00 PM" / "10:00:00 p.m."
+  const ampm = raw.match(/^(\d{1,2}):(\d{2})(?::\d{2})?\s*(a\.?m\.?|p\.?m\.?)$/i);
+  if (ampm) {
+    let h = parseInt(ampm[1], 10);
+    const m = ampm[2];
+    const period = ampm[3].replace(/\./g,'').toLowerCase();
+    if (period === 'pm' && h !== 12) h += 12;
+    if (period === 'am' && h === 12) h = 0;
+    return String(h).padStart(2,'0') + ':' + m;
+  }
+  // "22:00:00" o "8:00:00" → tomar solo HH:MM
+  const hms = raw.match(/^(\d{1,2}):(\d{2})(?::\d{2})?$/);
+  if (hms) return String(parseInt(hms[1],10)).padStart(2,'0') + ':' + hms[2];
+  return raw;
+}
+
 async function fetchSheetData(fecha) {
   if (sheetCache[fecha]) return sheetCache[fecha];
 
@@ -1686,7 +1712,7 @@ async function fetchSheetData(fecha) {
 
     lines.slice(1).forEach(line => {
       const cols = line.split(',').map(c => c.replace(/^"|"$/g,'').trim());
-      const hora   = (cols[3] || '').replace(/^(\d):/, '0$1:'); // normaliza "0:00" → "00:00"
+      const hora   = _normalizeHora(cols[3] || '');
       const nombre = cols[1];
       if (!hora || !nombre) return;
       const canchaNum = parseInt(nombre.replace('Cancha ', ''), 10);
