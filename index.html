@@ -1481,7 +1481,11 @@
 
 <script>
 const WA = '541135871933';
-const SHEET_DISP_URL   = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTkDmKkZBINb-bWxqZLAX4IC4EliStJw_aTl0IySwBDSYAbGs4erlDIIof2_DEjCULw_ysqmbvjH1xk/pub?gid=1984367544&single=true&output=csv';
+const SHEET_BASE_URL   = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTkDmKkZBINb-bWxqZLAX4IC4EliStJw_aTl0IySwBDSYAbGs4erlDIIof2_DEjCULw_ysqmbvjH1xk/pub?single=true&output=csv&sheet=';
+function getSheetDispUrl(fecha) {
+  const ym = fecha.slice(0, 7); // "YYYY-MM"
+  return SHEET_BASE_URL + encodeURIComponent(ym) + '&t=' + Date.now();
+}
 const SHEET_PRECIO_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTkDmKkZBINb-bWxqZLAX4IC4EliStJw_aTl0IySwBDSYAbGs4erlDIIof2_DEjCULw_ysqmbvjH1xk/pub?gid=885062991&single=true&output=csv';
 
 function toggleNav() { document.getElementById('navLinks').classList.toggle('open'); }
@@ -1696,9 +1700,9 @@ function _normalizeHora(raw) {
 async function fetchSheetData(fecha) {
   if (sheetCache[fecha]) return sheetCache[fecha];
 
-  // Carga el mes completo una sola vez desde SHEET_DISP_URL
+  // Carga el mes completo una sola vez, usando la hoja del mes correspondiente
   if (!monthData) {
-    const r = await fetch(SHEET_DISP_URL + '&t=' + Date.now(), { cache: 'no-store' });
+    const r = await fetch(getSheetDispUrl(fecha), { cache: 'no-store' });
     if (!r.ok) throw new Error('no sheet');
     const txt = await r.text();
     const lines = txt.trim().split('\n');
