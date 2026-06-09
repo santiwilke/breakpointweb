@@ -1469,25 +1469,36 @@ function checkNext1() {
   document.getElementById('next1').disabled = !(bk.hora !== null && bk.duracion !== null);
 }
 
+function parseCSV(text) {
+  const rows = [];
+  let cur = '', inQuote = false, fields = [];
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+    if (ch === '"') { inQuote = !inQuote; }
+    else if (ch === ',' && !inQuote) { fields.push(cur.trim()); cur = ''; }
+    else if ((ch === '\n' || ch === '\r') && !inQuote) {
+      if (ch === '\r' && text[i+1] === '\n') i++;
+      fields.push(cur.trim()); rows.push(fields); fields = []; cur = '';
+    } else { cur += ch; }
+  }
+  if (cur || fields.length) { fields.push(cur.trim()); rows.push(fields); }
+  const headers = rows[0] || [];
+  return rows.slice(1).map(row => {
+    const obj = {};
+    headers.forEach((h, i) => obj[h] = row[i] ?? '');
+    return obj;
+  });
+}
+
 async function fetchPrecio() {
   try {
     const r = await fetch(SHEET_PRECIO_URL);
     if (!r.ok) return;
-    const txt = await r.text();
-    const lines = txt.trim().split('\n');
-    // Busca el primer valor numérico en cualquier fila (ignora el header)
-    for (let i = 1; i < lines.length; i++) {
-      const cols = lines[i].split(',').map(c => c.replace(/^"|"$/g,'').trim());
-      for (const col of cols) {
-        const p = parseFloat(col.replace(/\./g,'').replace(',','.'));
-        if (!isNaN(p) && p > 1000) { // descarta ceros o IDs pequeños
-          precio = p;
-          break;
-        }
-      }
-      if (precio !== 50000 || lines.length === 2) break;
+    const rows = parseCSV(await r.text());
+    for (const row of rows) {
+      const p = parseInt((row['precio'] || '').replace(/[^0-9]/g, ''), 10);
+      if (!isNaN(p) && p > 0) { precio = p; break; }
     }
-    // Actualiza todos los precios visibles en la página
     document.querySelectorAll('.cancha-precio').forEach(el => {
       el.innerHTML = formatPrice(precio) + ' <small>/ hora</small>';
     });
