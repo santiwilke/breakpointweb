@@ -467,8 +467,6 @@
     .hora-btn.blocked { color: rgba(180,60,60,0.3); border-color: rgba(180,60,60,0.12); cursor: not-allowed; background: rgba(180,60,60,0.03); }
     .hora-btn.end-mark { border-left: 3px solid var(--naranja); color: rgba(0,0,0,0.25); cursor: default; }
     .hora-btn.end-mark::before { content:'fin'; display:block; font-size:8px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--naranja); margin-bottom:1px; line-height:1; }
-    .hora-btn.partial { border-color: rgba(232,118,26,0.55); background: rgba(232,118,26,0.07); color: var(--crema-texto); }
-    .hora-btn.partial::after { content:''; display:block; width:5px; height:5px; border-radius:50%; background:var(--naranja); margin:2px auto 0; }
 
     .status-bar {
       margin-top: 0.75rem; padding: 0.55rem 0.85rem; border-radius: 7px;
@@ -1545,14 +1543,11 @@ function _renderGrid() {
     const isEnd    = bk.hora !== null && h === bk.hora + dur;
     const btn      = document.createElement('button');
 
-    const partialOcc = !selfOcc && !past && !inRange && !isEnd && someCanchasOccupied(sheetData, h);
-
-    if      (selfOcc)    btn.className = 'hora-btn unavailable';
-    else if (past)       btn.className = 'hora-btn past';
-    else if (inRange)    btn.className = 'hora-btn selected';
-    else if (isEnd)      btn.className = 'hora-btn end-mark';
-    else if (partialOcc) btn.className = 'hora-btn partial';
-    else                 btn.className = 'hora-btn';
+    if      (selfOcc) btn.className = 'hora-btn unavailable';
+    else if (past)    btn.className = 'hora-btn past';
+    else if (inRange) btn.className = 'hora-btn selected';
+    else if (isEnd)   btn.className = 'hora-btn end-mark';
+    else              btn.className = 'hora-btn';
 
     btn.textContent = fmtSlot(h);
     btn.disabled = selfOcc || past;
