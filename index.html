@@ -629,6 +629,12 @@
       background: rgba(248,113,113,0.12); border: 1.5px solid rgba(248,113,113,0.4);
       color: rgba(248,113,113,0.8); font-size: 13px; font-weight: 700; vertical-align: middle;
     }
+    .cell-clase {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 22px; height: 22px; border-radius: 5px;
+      background: rgba(232,118,26,0.15); border: 1.5px solid rgba(232,118,26,0.5);
+      color: rgba(232,118,26,0.9); font-size: 13px; font-weight: 700; vertical-align: middle;
+    }
     .cell-past {
       display: inline-flex; align-items: center; justify-content: center;
       width: 22px; height: 22px; border-radius: 5px;
@@ -643,6 +649,7 @@
     .ley-dot { width: 8px; height: 8px; border-radius: 2px; }
     .ley-dot.libre { background: rgba(74,222,128,0.5); }
     .ley-dot.ocupado { background: rgba(248,113,113,0.4); }
+    .ley-dot.clase { background: rgba(232,118,26,0.6); }
 
     /* ── CONTACTO — azul profundo ── */
     #contacto { background: var(--azul-deep); color: var(--blanco); }
@@ -1209,7 +1216,8 @@
     </div>
     <div class="leyenda">
       <div class="ley-item"><div class="ley-dot libre"></div>Libre</div>
-      <div class="ley-item"><div class="ley-dot ocupado"></div>Ocupado</div>
+      <div class="ley-item"><div class="ley-dot ocupado"></div>Alquiler</div>
+      <div class="ley-item"><div class="ley-dot clase"></div>Clase</div>
       <button id="btn-refresh-disp" onclick="refreshDisp()" style="margin-left:auto;display:flex;align-items:center;gap:6px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.18);color:rgba(255,255,255,0.7);font-family:inherit;font-size:0.78rem;font-weight:600;padding:5px 12px;border-radius:7px;cursor:pointer;transition:background .2s,color .2s;">
         <svg id="refresh-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
         Actualizar
@@ -1688,7 +1696,10 @@ async function fetchSheetData(fecha) {
         if (!dia) continue;
         if (!monthData[dia])        monthData[dia] = {};
         if (!monthData[dia][hora])  monthData[dia][hora] = {};
-        monthData[dia][hora][canchaNum] = ['X','OCUPADO','1'].includes((cols[i]||'').toUpperCase().trim());
+        const v = (cols[i]||'').toUpperCase().trim();
+        if (v === 'X' || v === 'OCUPADO' || v === '1') monthData[dia][hora][canchaNum] = 'X';
+        else if (v === 'O') monthData[dia][hora][canchaNum] = 'O';
+        else monthData[dia][hora][canchaNum] = false;
       }
     });
   }
@@ -1899,10 +1910,10 @@ async function loadDisp() {
       const nowExtended = nowVal < 8 ? nowVal + 24 : nowVal; // si son las 01:00 AM = 25
       const past = isToday && numH <= nowExtended;
       if (past) return `<td><span class="cell-past">—</span></td>`;
-      const ocupado = sheetData && sheetData[h] && sheetData[h][c];
-      return ocupado
-        ? `<td><span class="cell-ocupado">✕</span></td>`
-        : `<td><span class="cell-libre">✓</span></td>`;
+      const val = sheetData && sheetData[h] && sheetData[h][c];
+      if (val === 'O') return `<td><span class="cell-clase">O</span></td>`;
+      if (val)         return `<td><span class="cell-ocupado">✕</span></td>`;
+      return `<td><span class="cell-libre">✓</span></td>`;
     }).join('');
     return `<tr><td>Cancha ${c}</td>${cells}</tr>`;
   }).join('');
