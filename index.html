@@ -1484,6 +1484,14 @@ async function renderHoras() {
   _renderGrid();
 }
 
+function canchaOcupadaEnRango(sheetData, canchaNum, horaInicio, duracion) {
+  for (let t = horaInicio; t < horaInicio + duracion; t += 0.5) {
+    const key = sheetKey(t);
+    if (sheetData[key] && sheetData[key][canchaNum]) return true;
+  }
+  return false;
+}
+
 // ── STEP 2: Canchas libres a esa hora ─────────────
 async function renderCanchasLibres() {
   const cont = document.getElementById('canchas-libres');
@@ -1509,7 +1517,7 @@ async function renderCanchasLibres() {
   let hayLibres = false;
 
   [1,2,3,4].forEach(c => {
-    const ocupada = sheetData && sheetData[sheetKey(bk.hora)] && sheetData[sheetKey(bk.hora)][c];
+    const ocupada = sheetData && canchaOcupadaEnRango(sheetData, c, bk.hora, bk.duracion);
     if (!ocupada) hayLibres = true;
 
     const card = document.createElement('div');
