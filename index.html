@@ -1475,15 +1475,19 @@ async function fetchPrecio() {
     if (!r.ok) return;
     const txt = await r.text();
     const lines = txt.trim().split('\n');
+    // Busca el primer valor numérico en cualquier fila (ignora el header)
     for (let i = 1; i < lines.length; i++) {
       const cols = lines[i].split(',').map(c => c.replace(/^"|"$/g,'').trim());
-      if (cols[0] === 'padel') {
-        const p = parseFloat(cols[2]);
-        if (!isNaN(p) && p > 0) precio = p;
-        break;
+      for (const col of cols) {
+        const p = parseFloat(col.replace(/\./g,'').replace(',','.'));
+        if (!isNaN(p) && p > 1000) { // descarta ceros o IDs pequeños
+          precio = p;
+          break;
+        }
       }
+      if (precio !== 50000 || lines.length === 2) break;
     }
-    // Actualiza los precios visibles en la sección Canchas
+    // Actualiza todos los precios visibles en la página
     document.querySelectorAll('.cancha-precio').forEach(el => {
       el.innerHTML = formatPrice(precio) + ' <small>/ hora</small>';
     });
