@@ -264,8 +264,11 @@
     .cancha-nombre { font-size: 1.25rem; font-weight: 800; letter-spacing: -0.5px; color: var(--crema-texto); margin-bottom: 0.6rem; }
     .cancha-tags { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 1rem; }
     .tag { font-size: 0.68rem; font-weight: 600; color: var(--azul); background: var(--azul-dim); padding: 3px 8px; border-radius: 4px; }
-    .cancha-precio { font-size: 1.15rem; font-weight: 800; color: var(--naranja); letter-spacing: -0.3px; }
+    .cancha-precio { font-size: 1.15rem; font-weight: 800; color: var(--naranja); letter-spacing: -0.3px; opacity: 0; transition: opacity .4s ease; }
+    .cancha-precio.loaded { opacity: 1; }
     .cancha-precio small { font-size: 0.72rem; font-weight: 500; color: var(--crema-dim); }
+    .cancha-precio-skeleton { width: 90px; height: 1.15rem; background: linear-gradient(90deg,var(--crema-borde) 25%,rgba(120,90,50,0.06) 50%,var(--crema-borde) 75%); background-size: 200% 100%; border-radius: 4px; animation: shimmer 1.2s infinite; }
+    @keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
 
     /* ── SERVICIOS — azul profundo ── */
     #servicios { background: var(--azul-deep); }
@@ -836,7 +839,7 @@
         <div class="cancha-body">
           <div class="cancha-nombre">Cancha 1</div>
           <div class="cancha-tags"><span class="tag">Techada</span><span class="tag">Iluminada</span><span class="tag">Vidrio</span></div>
-          <div class="cancha-precio">$50.000 <small>/ hora</small></div>
+          <div class="cancha-precio"><span class="cancha-precio-skeleton"></span></div>
         </div>
       </div>
       <div class="cancha-card reveal reveal-delay-2">
@@ -847,7 +850,7 @@
         <div class="cancha-body">
           <div class="cancha-nombre">Cancha 2</div>
           <div class="cancha-tags"><span class="tag">Techada</span><span class="tag">Iluminada</span><span class="tag">Vidrio</span></div>
-          <div class="cancha-precio">$50.000 <small>/ hora</small></div>
+          <div class="cancha-precio"><span class="cancha-precio-skeleton"></span></div>
         </div>
       </div>
       <div class="cancha-card reveal reveal-delay-3">
@@ -858,7 +861,7 @@
         <div class="cancha-body">
           <div class="cancha-nombre">Cancha 3</div>
           <div class="cancha-tags"><span class="tag">Techada</span><span class="tag">Iluminada</span><span class="tag">Vidrio</span></div>
-          <div class="cancha-precio">$50.000 <small>/ hora</small></div>
+          <div class="cancha-precio"><span class="cancha-precio-skeleton"></span></div>
         </div>
       </div>
       <div class="cancha-card reveal reveal-delay-4">
@@ -869,7 +872,7 @@
         <div class="cancha-body">
           <div class="cancha-nombre">Cancha 4</div>
           <div class="cancha-tags"><span class="tag">Techada</span><span class="tag">Iluminada</span><span class="tag">Vidrio</span></div>
-          <div class="cancha-precio">$50.000 <small>/ hora</small></div>
+          <div class="cancha-precio"><span class="cancha-precio-skeleton"></span></div>
         </div>
       </div>
     </div>
@@ -1500,7 +1503,20 @@ async function fetchPrecio() {
       if (!isNaN(p) && p > 0) { precio = p; break; }
     }
     document.querySelectorAll('.cancha-precio').forEach(el => {
-      el.innerHTML = formatPrice(precio) + ' <small>/ hora</small>';
+      const target = precio;
+      const duration = 600;
+      const steps = 30;
+      const step = target / steps;
+      let current = 0;
+      let count = 0;
+      el.innerHTML = formatPrice(0) + ' <small>/ hora</small>';
+      el.classList.add('loaded');
+      const timer = setInterval(() => {
+        count++;
+        current = count < steps ? step * count : target;
+        el.innerHTML = formatPrice(Math.round(current)) + ' <small>/ hora</small>';
+        if (count >= steps) clearInterval(timer);
+      }, duration / steps);
     });
   } catch {}
 }
