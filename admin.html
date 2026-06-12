@@ -874,20 +874,20 @@ let sbClient = null
    ══════════════════════════════════════ */
 const CANCHAS  = ['Cancha 1','Cancha 2','Cancha 3','Cancha 4']
 // Horarios reales del complejo — varían por día
-// Lun–Vie: 08:00–02:00 | Sáb: 09:00–02:00 | Dom: 16:00–00:00
+// Lun–Vie: 08:00–01:00 último slot (cierra 02:00) | Sáb: 09:00–01:00 | Dom: 16:00–23:00 último slot (cierra 00:00)
 function generarSlots(desde, hasta) {
   const s=[]; let m=parseInt(desde)*60+parseInt(desde.split(':')[1]||0), e=parseInt(hasta)*60+parseInt(hasta.split(':')[1]||0); if(e<=m)e+=1440
   while(m<e){const hh=Math.floor((m%1440)/60),mm=(m%1440)%60;s.push(String(hh).padStart(2,'0')+':'+String(mm).padStart(2,'0'));m+=30} return s
 }
 function toMinsDay(h){const[hh,mm]=h.split(':').map(Number),v=hh*60+mm;return v<480?v+1440:v}
 const HORARIOS_SEMANA=[
-  generarSlots('16:00','00:00'), // 0 Dom
-  generarSlots('08:00','02:00'), // 1 Lun
-  generarSlots('08:00','02:00'), // 2 Mar
-  generarSlots('08:00','02:00'), // 3 Mié
-  generarSlots('08:00','02:00'), // 4 Jue
-  generarSlots('08:00','02:00'), // 5 Vie
-  generarSlots('09:00','02:00'), // 6 Sáb
+  generarSlots('16:00','23:30'), // 0 Dom — cierra 00:00, último inicio 23:00 (1h)
+  generarSlots('08:00','01:30'), // 1 Lun — cierra 02:00, último inicio 01:00 (1h)
+  generarSlots('08:00','01:30'), // 2 Mar
+  generarSlots('08:00','01:30'), // 3 Mié
+  generarSlots('08:00','01:30'), // 4 Jue
+  generarSlots('08:00','01:30'), // 5 Vie
+  generarSlots('09:00','01:30'), // 6 Sáb — cierra 02:00, último inicio 01:00 (1h)
 ]
 const HORARIOS=HORARIOS_SEMANA[1] // alias weekday (fallback y demo)
 function horariosDelDia(d){return HORARIOS_SEMANA[d]??HORARIOS_SEMANA[1]}
