@@ -2000,40 +2000,34 @@ function animateCount(el) {
   requestAnimationFrame(step);
 }
 
-// Extraer valores numéricos de los stat-nums y guardar como data-count
-document.querySelectorAll('.stat-num').forEach(el => {
-  const spanEl = el.querySelector('span');
-  // texto = nodo de texto + posible span con sufijo naranja
-  const textNode = [...el.childNodes].find(n => n.nodeType === 3 && n.textContent.trim());
-  if (textNode) {
-    const num = parseFloat(textNode.textContent.replace(/[^0-9.]/g, ''));
-    if (!isNaN(num) && num > 0) {
-      el.setAttribute('data-count', num);
-      textNode.textContent = '0';
-    }
-  }
-});
-
-const statsObserver = new IntersectionObserver((entries) => {
-  entries.forEach(e => {
-    if (e.isIntersecting) {
-      e.currentTarget.querySelectorAll('.stat-num[data-count]').forEach(animateCount);
-      statsObserver.unobserve(e.currentTarget);
-    }
-  });
-}, { threshold: 0.1 });
-
+// Stats: animar contadores solo si el stats-band NO está visible al cargar
+// Si ya está en el viewport, mostrar el valor directamente sin reset a 0
 const statsBand = document.querySelector('.stats-band');
 if (statsBand) {
-  statsObserver.observe(statsBand);
-  // Si ya está en el viewport al cargar (o el usuario viene de un anchor), animar de una
-  setTimeout(() => {
-    const r = statsBand.getBoundingClientRect();
-    if (r.top < window.innerHeight && r.bottom > 0) {
-      statsBand.querySelectorAll('.stat-num[data-count]').forEach(animateCount);
-      statsObserver.unobserve(statsBand);
-    }
-  }, 50);
+  const statNums = statsBand.querySelectorAll('.stat-num');
+  const r = statsBand.getBoundingClientRect();
+  const yaVisible = r.top < window.innerHeight && r.bottom > 0;
+
+  if (!yaVisible) {
+    // Solo resetear a 0 si NO está en viewport (para hacer la animación al scrollear)
+    statNums.forEach(el => {
+      const textNode = [...el.childNodes].find(n => n.nodeType === 3 && n.textContent.trim());
+      if (textNode) {
+        const num = parseFloat(textNode.textContent.replace(/[^0-9.]/g, ''));
+        if (!isNaN(num) && num > 0) { el.setAttribute('data-count', num); textNode.textContent = '0'; }
+      }
+    });
+    const statsObserver = new IntersectionObserver((entries) => {
+      entries.forEach(e => {
+        if (e.isIntersecting) {
+          e.currentTarget.querySelectorAll('.stat-num[data-count]').forEach(animateCount);
+          statsObserver.unobserve(e.currentTarget);
+        }
+      });
+    }, { threshold: 0.1 });
+    statsObserver.observe(statsBand);
+  }
+  // Si ya es visible: no tocar nada, el HTML muestra el valor correcto directamente
 }
 
 // ── PARALLAX suave en hero ───────────────────────────
