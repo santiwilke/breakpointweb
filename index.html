@@ -10,6 +10,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     :root {
       /* Azul — color base dominante */
@@ -1102,7 +1103,15 @@
           <div class="step-content active" id="s1">
             <div class="fgroup">
               <label class="flabel">Fecha</label>
-              <input type="date" class="finput" id="fecha" onchange="onFecha()">
+              <div style="display:flex;align-items:center;gap:8px">
+                <button onclick="cambiarDia(-1)" style="background:var(--azul-dim);border:1px solid rgba(37,99,176,.35);border-radius:8px;color:var(--azul);width:36px;height:36px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;font-size:16px;transition:.15s" onmouseover="this.style.background='rgba(37,99,176,.25)'" onmouseout="this.style.background='var(--azul-dim)'" title="Día anterior">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+                </button>
+                <input type="date" class="finput" id="fecha" onchange="onFecha()" style="flex:1">
+                <button onclick="cambiarDia(1)" style="background:var(--azul-dim);border:1px solid rgba(37,99,176,.35);border-radius:8px;color:var(--azul);width:36px;height:36px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;font-size:16px;transition:.15s" onmouseover="this.style.background='rgba(37,99,176,.25)'" onmouseout="this.style.background='var(--azul-dim)'" title="Día siguiente">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+                </button>
+              </div>
             </div>
             <div class="fgroup">
               <label class="flabel">Horario de inicio</label>
@@ -1203,7 +1212,15 @@
       </div>
       <div>
         <label class="flabel-light">Fecha</label>
-        <input type="date" class="finput-dark" id="dfecha" onchange="loadDisp()">
+        <div style="display:flex;align-items:center;gap:8px">
+          <button onclick="cambiarDiaDisp(-1)" style="background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);border-radius:8px;color:#fff;width:36px;height:36px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;transition:.15s" onmouseover="this.style.background='rgba(255,255,255,.15)'" onmouseout="this.style.background='rgba(255,255,255,.08)'" title="Día anterior">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+          </button>
+          <input type="date" class="finput-dark" id="dfecha" onchange="loadDisp()" style="flex:1">
+          <button onclick="cambiarDiaDisp(1)" style="background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);border-radius:8px;color:#fff;width:36px;height:36px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;transition:.15s" onmouseover="this.style.background='rgba(255,255,255,.15)'" onmouseout="this.style.background='rgba(255,255,255,.08)'" title="Día siguiente">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+          </button>
+        </div>
       </div>
     </div>
     <div class="table-wrap">
@@ -1217,7 +1234,6 @@
     <div class="leyenda">
       <div class="ley-item"><div class="ley-dot libre"></div>Libre</div>
       <div class="ley-item"><div class="ley-dot ocupado"></div>Alquiler</div>
-      <div class="ley-item"><div class="ley-dot clase"></div>Clase</div>
       <button id="btn-refresh-disp" onclick="refreshDisp()" style="margin-left:auto;display:flex;align-items:center;gap:6px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.18);color:rgba(255,255,255,0.7);font-family:inherit;font-size:0.78rem;font-weight:600;padding:5px 12px;border-radius:7px;cursor:pointer;transition:background .2s,color .2s;">
         <svg id="refresh-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
         Actualizar
@@ -1231,138 +1247,8 @@
   <div class="container">
     <div class="label reveal">Kiosco & Buffet</div>
     <h2 class="h2 reveal reveal-delay-1">Nuestro <em>menú</em></h2>
-    <div class="menu-cats">
-
-      <!-- Hamburguesas & Sándwiches -->
-      <div class="menu-cat">
-        <div class="menu-cat-head">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11 Q3 6 12 6 Q21 6 21 11"/><rect x="2" y="11" width="20" height="3" rx="1"/><path d="M3 14v1a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-1"/></svg>
-          <span class="menu-cat-title">Hamburguesas & Sándwiches</span>
-        </div>
-        <div class="menu-cat-body">
-          <div class="menu-row"><span class="menu-item-name">Hamburguesa Simple</span></div>
-          <div class="menu-row"><span class="menu-item-name">Hamburguesa Completa</span></div>
-          <div class="menu-row"><span class="menu-item-name">Sandwich de Milanesa</span></div>
-          <div class="menu-row"><span class="menu-item-name">Sandwich de Mila c/ Fritas</span></div>
-          <div class="menu-row"><span class="menu-item-name">Super Pancho</span></div>
-          <div class="menu-row"><span class="menu-item-name">Tostado</span></div>
-        </div>
-      </div>
-
-      <!-- Milanesas & Carnes -->
-      <div class="menu-cat">
-        <div class="menu-cat-head">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8a6 6 0 0 0-6-6 6 6 0 0 0-6 6c0 7 6 13 6 13s6-6 6-13Z"/></svg>
-          <span class="menu-cat-title">Milanesas & Carnes</span>
-        </div>
-        <div class="menu-cat-body">
-          <div class="menu-row"><span class="menu-item-name">Milanesa al Plato</span></div>
-          <div class="menu-row"><span class="menu-item-name">Milanesa Napolitana</span></div>
-          <div class="menu-row"><span class="menu-item-name">Milanesa de Pollo c/ Guarnición</span></div>
-          <div class="menu-row"><span class="menu-item-name" style="font-size:0.78rem;color:var(--crema-dim)">Puré de papas, fritas o ensalada</span></div>
-          <div class="menu-row"><span class="menu-item-name">Entraña con Guarnición</span></div>
-          <div class="menu-row"><span class="menu-item-name">Empanadas</span></div>
-          <div class="menu-row"><span class="menu-item-name">Nuggets de Pollo con Fritas</span></div>
-          <div class="menu-row"><span class="menu-item-name">Cono de Papas Fritas</span></div>
-        </div>
-      </div>
-
-      <!-- Pastas -->
-      <div class="menu-cat">
-        <div class="menu-cat-head">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 15a4 4 0 0 0 4 4h10a4 4 0 0 0 4-4"/><path d="M3 15c0-4.4 8-8 9-12"/><path d="M21 15c0-4.4-8-8-9-12"/></svg>
-          <span class="menu-cat-title">Pastas</span>
-        </div>
-        <div class="menu-cat-body">
-          <div class="menu-row"><span class="menu-item-name">Sorrentinos (Bolognesa o Filete)</span></div>
-          <div class="menu-row"><span class="menu-item-name">Ravioles (Bolognesa o Filete)</span></div>
-          <div class="menu-row"><span class="menu-item-name">Tallarines (Bolognesa o Filete)</span></div>
-        </div>
-      </div>
-
-      <!-- Pizzas -->
-      <div class="menu-cat">
-        <div class="menu-cat-head">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 20h20L12 2Z"/><path d="M12 2v18"/><path d="M2 20h20"/></svg>
-          <span class="menu-cat-title">Pizzas</span>
-        </div>
-        <div class="menu-cat-body">
-          <div class="menu-row"><span class="menu-item-name">Pizza de Muzza</span></div>
-          <div class="menu-row"><span class="menu-item-name">Pizza Napolitana</span></div>
-          <div class="menu-row"><span class="menu-item-name">Pizza de Roquefort</span></div>
-          <div class="menu-row"><span class="menu-item-name">Pizza de Jamón</span></div>
-          <div class="menu-row"><span class="menu-item-name">Pizza Especial</span></div>
-          <div class="menu-row"><span class="menu-item-name">Pizza Individual</span></div>
-          <div class="menu-row"><span class="menu-item-name">Tarta (Porción)</span></div>
-        </div>
-      </div>
-
-      <!-- Menú Healthy -->
-      <div class="menu-cat">
-        <div class="menu-cat-head" style="background: #2d6a2d;">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-          <span class="menu-cat-title">Menú Healthy</span>
-        </div>
-        <div class="menu-cat-body">
-          <div class="menu-row"><span class="menu-item-name">Pechuga Grill c/ Ensalada</span></div>
-          <div class="menu-row"><span class="menu-item-name">Bife con Ensalada</span></div>
-          <div class="menu-row"><span class="menu-item-name">Ensalada</span></div>
-          <div class="menu-row"><span class="menu-item-name">Omelette</span></div>
-          <div class="menu-row"><span class="menu-item-name">Huevos Revueltos</span></div>
-          <div class="menu-row"><span class="menu-item-name">Yogures</span></div>
-          <div class="menu-row"><span class="menu-item-name">Frutas de Estación</span></div>
-        </div>
-      </div>
-
-      <!-- Cafetería -->
-      <div class="menu-cat">
-        <div class="menu-cat-head">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8Z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>
-          <span class="menu-cat-title">Cafetería</span>
-        </div>
-        <div class="menu-cat-body">
-          <div class="menu-row"><span class="menu-item-name">Café / Café Cortado (Chico)</span></div>
-          <div class="menu-row"><span class="menu-item-name">Café con Leche (Doble)</span></div>
-          <div class="menu-row"><span class="menu-item-name">Té</span></div>
-          <div class="menu-row"><span class="menu-item-name">Mate</span></div>
-        </div>
-      </div>
-
-      <!-- Bebidas c/ Alcohol -->
-      <div class="menu-cat">
-        <div class="menu-cat-head">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 22h8"/><path d="M12 11v11"/><path d="M17 2H7l5 9 5-9Z"/></svg>
-          <span class="menu-cat-title">Bebidas c/ Alcohol</span>
-        </div>
-        <div class="menu-cat-body">
-          <div class="menu-row"><span class="menu-item-name">Lata de Cerveza</span></div>
-          <div class="menu-row"><span class="menu-item-name">Heineken 1L</span></div>
-          <div class="menu-row"><span class="menu-item-name">Grolsch</span></div>
-          <div class="menu-row"><span class="menu-item-name">Warsteiner</span></div>
-          <div class="menu-row"><span class="menu-item-name">Fernet</span></div>
-        </div>
-      </div>
-
-      <!-- Bebidas sin Alcohol -->
-      <div class="menu-cat">
-        <div class="menu-cat-head">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 2h8l1 8H7L8 2Z"/><path d="M7 10c0 5 2 8 5 10 3-2 5-5 5-10"/></svg>
-          <span class="menu-cat-title">Bebidas sin Alcohol</span>
-        </div>
-        <div class="menu-cat-body">
-          <div class="menu-row"><span class="menu-item-name">Agua Smart 500ml</span></div>
-          <div class="menu-row"><span class="menu-item-name">Agua Smart 1,5L</span></div>
-          <div class="menu-row"><span class="menu-item-name">Agua Grande 1,5L</span></div>
-          <div class="menu-row"><span class="menu-item-name">Gaseosa Chica</span></div>
-          <div class="menu-row"><span class="menu-item-name">Coca-Cola Vidrio</span></div>
-          <div class="menu-row"><span class="menu-item-name">Saborizada Grande / Chica</span></div>
-          <div class="menu-row"><span class="menu-item-name">Powerade 500 / 995 / 1,5L</span></div>
-          <div class="menu-row"><span class="menu-item-name">Gatorade 500 / 750 / 1,25L</span></div>
-          <div class="menu-row"><span class="menu-item-name">Monster</span></div>
-          <div class="menu-row"><span class="menu-item-name">Cepita</span></div>
-        </div>
-      </div>
-
+    <div class="menu-cats" id="menu-cats-container">
+      <div style="grid-column:1/-1;text-align:center;padding:2rem;color:var(--crema-dim);font-size:0.9rem">Cargando menú...</div>
     </div>
     <div style="margin-top:2rem;padding:1rem 1.5rem;background:var(--azul-dim);border-radius:10px;border:1px solid var(--azul-borde);text-align:center;">
       <p style="font-size:0.9rem;font-weight:700;color:var(--azul);margin-bottom:0.25rem;">Consultanos por el plato de la semana</p>
@@ -1481,16 +1367,22 @@
 
 <script>
 const WA = '541135871933';
-const SHEET_DISP_URL   = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTkDmKkZBINb-bWxqZLAX4IC4EliStJw_aTl0IySwBDSYAbGs4erlDIIof2_DEjCULw_ysqmbvjH1xk/pub?gid=928483956&single=true&output=csv';
-function getSheetDispUrl(fecha) {
-  return SHEET_DISP_URL + '&t=' + Date.now();
-}
-const SHEET_PRECIO_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTkDmKkZBINb-bWxqZLAX4IC4EliStJw_aTl0IySwBDSYAbGs4erlDIIof2_DEjCULw_ysqmbvjH1xk/pub?gid=545085045&single=true&output=csv';
+const SUPABASE_URL = 'https://ojilfuuxbzlnpnyzhsfv.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_t6320_WgsiVL7i76LJtRIw__iD-LtEV';
+const sbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 function toggleNav() { document.getElementById('navLinks').classList.toggle('open'); }
 document.querySelectorAll('.nav-links a').forEach(a => a.addEventListener('click', () => document.getElementById('navLinks').classList.remove('open')));
 
-const todayStr = new Date().toISOString().split('T')[0];
+function businessDateStr() {
+  const now = new Date();
+  if (now.getHours() < 8) {
+    const ayer = new Date(now); ayer.setDate(ayer.getDate() - 1);
+    return ayer.toISOString().split('T')[0];
+  }
+  return now.toISOString().split('T')[0];
+}
+const todayStr = businessDateStr();
 ['fecha','dfecha'].forEach(id => {
   const el = document.getElementById(id);
   if (!el) return;
@@ -1505,8 +1397,7 @@ const todayStr = new Date().toISOString().split('T')[0];
 // Estado global — hora es numérico (ej. 8, 8.5, 9 ...)
 const bk = { cancha: null, fecha: todayStr, hora: null, duracion: null };
 let sheetCache  = {};
-let monthCache  = {};    // monthCache["2026-06"] = datos del mes completo
-let precio     = 50000;  // fallback; se pisa con el valor del sheet
+let precio     = 50000;
 
 const CLOSING_HOUR = 26; // 02:00 AM en notación extendida
 
@@ -1585,6 +1476,26 @@ function onFecha() {
   renderHoras();
 }
 
+function cambiarDiaDisp(delta) {
+  const el = document.getElementById('dfecha');
+  const d = new Date((el.value || todayStr) + 'T12:00:00');
+  d.setDate(d.getDate() + delta);
+  const nueva = d.toISOString().split('T')[0];
+  if (nueva < todayStr) return;
+  el.value = nueva;
+  loadDisp();
+}
+
+function cambiarDia(delta) {
+  const el = document.getElementById('fecha');
+  const d = new Date((el.value || todayStr) + 'T12:00:00');
+  d.setDate(d.getDate() + delta);
+  const nueva = d.toISOString().split('T')[0];
+  if (nueva < todayStr) return;
+  el.value = nueva;
+  onFecha();
+}
+
 function selectDur(d) {
   bk.duracion = d;
   document.querySelectorAll('.dur-btn').forEach(b => {
@@ -1621,123 +1532,92 @@ function checkNext1() {
   document.getElementById('next1').disabled = !(bk.hora !== null && bk.duracion !== null);
 }
 
-function parseCSV(text) {
-  const rows = [];
-  let cur = '', inQuote = false, fields = [];
-  for (let i = 0; i < text.length; i++) {
-    const ch = text[i];
-    if (ch === '"') { inQuote = !inQuote; }
-    else if (ch === ',' && !inQuote) { fields.push(cur.trim()); cur = ''; }
-    else if ((ch === '\n' || ch === '\r') && !inQuote) {
-      if (ch === '\r' && text[i+1] === '\n') i++;
-      fields.push(cur.trim()); rows.push(fields); fields = []; cur = '';
-    } else { cur += ch; }
-  }
-  if (cur || fields.length) { fields.push(cur.trim()); rows.push(fields); }
-  const headers = rows[0] || [];
-  return rows.slice(1).map(row => {
-    const obj = {};
-    headers.forEach((h, i) => obj[h] = row[i] ?? '');
-    return obj;
+function initPrecio() {
+  document.querySelectorAll('.cancha-precio').forEach(el => {
+    const target = precio;
+    const duration = 600;
+    const steps = 30;
+    const step = target / steps;
+    let current = 0;
+    let count = 0;
+    el.innerHTML = formatPrice(0) + ' <small>/ hora</small>';
+    el.classList.add('loaded');
+    const timer = setInterval(() => {
+      count++;
+      current = count < steps ? step * count : target;
+      el.innerHTML = formatPrice(Math.round(current)) + ' <small>/ hora</small>';
+      if (count >= steps) clearInterval(timer);
+    }, duration / steps);
   });
 }
 
-async function fetchPrecio() {
-  try {
-    const r = await fetch(SHEET_PRECIO_URL + '&t=' + Date.now(), { cache: 'no-store' });
-    if (!r.ok) return;
-    const rows = parseCSV(await r.text());
-    for (const row of rows) {
-      const p = parseInt((row['precio'] || '').replace(/[^0-9]/g, ''), 10);
-      if (!isNaN(p) && p > 0) { precio = p; break; }
-    }
-    document.querySelectorAll('.cancha-precio').forEach(el => {
-      const target = precio;
-      const duration = 600;
-      const steps = 30;
-      const step = target / steps;
-      let current = 0;
-      let count = 0;
-      el.innerHTML = formatPrice(0) + ' <small>/ hora</small>';
-      el.classList.add('loaded');
-      const timer = setInterval(() => {
-        count++;
-        current = count < steps ? step * count : target;
-        el.innerHTML = formatPrice(Math.round(current)) + ' <small>/ hora</small>';
-        if (count >= steps) clearInterval(timer);
-      }, duration / steps);
-    });
-  } catch {}
+// Cache de fijos (se carga una vez y se reutiliza)
+let fijosCache = null;
+
+async function fetchFijos() {
+  if (fijosCache) return fijosCache;
+  const { data, error } = await sbClient.from('horarios_fijos').select('cancha,dia,hora_inicio,duracion,fecha_inicio,fecha_fin');
+  fijosCache = error ? [] : (data || []);
+  return fijosCache;
 }
 
-function _normalizeHora(raw) {
-  // Acepta: "8:00", "08:00", "22:00:00", "10:00:00 PM", "10:00:00 p.m.", "0.916666..."
-  raw = raw.trim();
-  // Fracción decimal de Google Sheets (tiempo como número: 0.5 = 12:00)
-  if (/^0?\.\d+$/.test(raw) || (!isNaN(raw) && raw !== '' && Number(raw) < 1)) {
-    const mins = Math.round(Number(raw) * 24 * 60);
-    const h = Math.floor(mins / 60) % 24;
-    const m = mins % 60;
-    return String(h).padStart(2,'0') + ':' + String(m).padStart(2,'0');
-  }
-  // "10:00:00 PM" / "10:00:00 p.m."
-  const ampm = raw.match(/^(\d{1,2}):(\d{2})(?::\d{2})?\s*(a\.?m\.?|p\.?m\.?)$/i);
-  if (ampm) {
-    let h = parseInt(ampm[1], 10);
-    const m = ampm[2];
-    const period = ampm[3].replace(/\./g,'').toLowerCase();
-    if (period === 'pm' && h !== 12) h += 12;
-    if (period === 'am' && h === 12) h = 0;
-    return String(h).padStart(2,'0') + ':' + m;
-  }
-  // "22:00:00" o "8:00:00" → tomar solo HH:MM
-  const hms = raw.match(/^(\d{1,2}):(\d{2})(?::\d{2})?$/);
-  if (hms) return String(parseInt(hms[1],10)).padStart(2,'0') + ':' + hms[2];
-  return raw;
+// Convierte "HH:MM" a número extendido (00:30 → 24.5, 01:00 → 25, etc.)
+function horaStrToNum(s) {
+  const m = s.match(/^(\d{1,2}):(\d{2})/);
+  if (!m) return 0;
+  let h = parseInt(m[1], 10) + parseInt(m[2], 10) / 60;
+  if (h < 8) h += 24; // post-medianoche
+  return h;
 }
 
 async function fetchSheetData(fecha) {
   if (sheetCache[fecha]) return sheetCache[fecha];
 
-  const ym  = fecha.slice(0, 7); // "YYYY-MM"
-  const dia = parseInt(fecha.split('-')[2], 10);
+  const [resData, fijos] = await Promise.all([
+    sbClient.from('reservas').select('cancha, hora, duracion').eq('fecha', fecha).neq('estado', 'cancelada'),
+    fetchFijos()
+  ]);
 
-  // Si el mes ya está cargado, solo derivar el día
-  if (monthCache[ym]) {
-    sheetCache[fecha] = monthCache[ym][dia] || {};
-    return sheetCache[fecha];
-  }
+  if (resData.error) throw new Error('supabase error');
 
-  // Fetch del mes completo
-  const r = await fetch(getSheetDispUrl(fecha), { cache: 'no-store' });
-  if (!r.ok) throw new Error('no sheet');
-  const txt  = await r.text();
-  const lines = txt.trim().split('\n');
-  const header = lines[0].split(',').map(c => c.replace(/^"|"$/g,'').trim());
+  const dayData = {};
 
-  const mesData = {};
-  lines.slice(1).forEach(line => {
-    const cols = line.split(',').map(c => c.replace(/^"|"$/g,'').trim());
-    const hora      = _normalizeHora(cols[3] || '');
-    const nombre    = cols[1];
-    if (!hora || !nombre) return;
-    const canchaNum = parseInt(nombre.replace('Cancha ', ''), 10);
+  // Reservas reales (ocupan durante su duración)
+  (resData.data || []).forEach(r => {
+    const hm = r.hora.match(/^(\d{1,2}):(\d{2})/);
+    if (!hm) return;
+    const startH = parseInt(hm[1],10) + parseInt(hm[2],10)/60;
+    const dur = parseFloat(r.duracion) || 1;
+    const canchaNum = parseInt((r.cancha || '').replace('Cancha ', ''), 10);
     if (!canchaNum) return;
-    for (let i = 4; i < header.length; i++) {
-      const d = parseInt(header[i], 10);
-      if (!d) continue;
-      if (!mesData[d])       mesData[d] = {};
-      if (!mesData[d][hora]) mesData[d][hora] = {};
-      const v = (cols[i]||'').toUpperCase().trim();
-      if      (v === 'X' || v === 'OCUPADO' || v === '1') mesData[d][hora][canchaNum] = 'X';
-      else if (v === 'O')                                  mesData[d][hora][canchaNum] = 'O';
-      else                                                 mesData[d][hora][canchaNum] = false;
+    for (let t = startH; t < startH + dur; t += 0.5) {
+      const extH = t < 8 ? t + 24 : t;
+      const key = String(Math.floor(extH) % 24).padStart(2,'0') + ':' + (extH % 1 === 0 ? '00' : '30');
+      if (!dayData[key]) dayData[key] = {};
+      dayData[key][canchaNum] = 'X';
     }
   });
 
-  monthCache[ym]   = mesData;
-  sheetCache[fecha] = mesData[dia] || {};
-  return sheetCache[fecha];
+  // Horarios fijos activos ese día de semana
+  const dow = new Date(fecha + 'T12:00:00').getDay();
+  fijos.forEach(f => {
+    if (parseInt(f.dia) !== dow) return;
+    if (f.fecha_inicio && fecha < f.fecha_inicio) return;
+    if (f.fecha_fin   && fecha > f.fecha_fin)    return;
+    const canchaNum = parseInt((f.cancha || '').replace('Cancha ', ''), 10);
+    if (!canchaNum) return;
+    const startH = horaStrToNum(f.hora_inicio);
+    const dur = parseFloat(f.duracion) || 1;
+    for (let t = startH; t < startH + dur; t += 0.5) {
+      const extH = t < 8 ? t + 24 : t;
+      const key = String(Math.floor(extH) % 24).padStart(2,'0') + ':' + (extH % 1 === 0 ? '00' : '30');
+      if (!dayData[key]) dayData[key] = {};
+      dayData[key][canchaNum] = 'X';
+    }
+  });
+
+  sheetCache[fecha] = dayData;
+  return dayData;
 }
 
 // Render sincrónico — usa sheetCache ya poblado
@@ -1926,11 +1806,11 @@ async function loadDisp() {
 
   dhead.innerHTML = '<th>Cancha</th>' + horas.map(h => `<th>${h}</th>`).join('');
 
+  const nowExtended = nowVal < 8 ? nowVal + 24 : nowVal;
+
   tbody.innerHTML = [1,2,3,4].map(c => {
     const cells = numSlots.map((numH, i) => {
       const h = horas[i];
-      // numH puede ser 24, 24.5, 25... — comparar directo con nowVal extendido
-      const nowExtended = nowVal < 8 ? nowVal + 24 : nowVal; // si son las 01:00 AM = 25
       const past = isToday && numH <= nowExtended;
       if (past) return `<td><span class="cell-past">—</span></td>`;
       const val = sheetData && sheetData[h] && sheetData[h][c];
@@ -1940,6 +1820,22 @@ async function loadDisp() {
     }).join('');
     return `<tr><td>Cancha ${c}</td>${cells}</tr>`;
   }).join('');
+
+  // Auto-scroll: si hay slots pasados, animar hasta el primer slot disponible
+  if (isToday) {
+    const firstActiveIdx = numSlots.findIndex(h => h > nowExtended);
+    if (firstActiveIdx > 0) {
+      const tableScroll = document.querySelector('.table-scroll');
+      const ths = document.querySelectorAll('#dhead th');
+      const targetTh = ths[firstActiveIdx]; // +1 por la th "Cancha", pero firstActiveIdx ya apunta a la posición correcta
+      if (tableScroll && targetTh) {
+        const thOffset = targetTh.offsetLeft - 20;
+        setTimeout(() => {
+          tableScroll.scrollTo({ left: thOffset, behavior: 'smooth' });
+        }, 120);
+      }
+    }
+  }
 }
 
 async function refreshDisp() {
@@ -1947,20 +1843,66 @@ async function refreshDisp() {
   const icon = document.getElementById('refresh-icon');
   btn.disabled = true;
   icon.style.animation = 'spin-icon .7s linear infinite';
-  // Limpiar todo el cache del mes para forzar re-fetch completo
-  const fecha = document.getElementById('dfecha').value;
-  const ym = fecha.slice(0, 7);
-  delete monthCache[ym];
-  sheetCache = {};
+  sheetCache = {}; fijosCache = null;
   await loadDisp();
   btn.disabled = false;
   icon.style.animation = '';
 }
 
 // Init
-fetchPrecio();
+initPrecio();
 renderHoras();
 loadDisp();
+loadMenu();
+
+const MENU_CATS_DEF = [
+  { id:'hamburguesas', nombre:'Hamburguesas & Sándwiches', color:null,
+    svg:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11 Q3 6 12 6 Q21 6 21 11"/><rect x="2" y="11" width="20" height="3" rx="1"/><path d="M3 14v1a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-1"/></svg>' },
+  { id:'milanesas', nombre:'Milanesas & Carnes', color:null,
+    svg:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8a6 6 0 0 0-6-6 6 6 0 0 0-6 6c0 7 6 13 6 13s6-6 6-13Z"/></svg>' },
+  { id:'pastas', nombre:'Pastas', color:null,
+    svg:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 15a4 4 0 0 0 4 4h10a4 4 0 0 0 4-4"/><path d="M3 15c0-4.4 8-8 9-12"/><path d="M21 15c0-4.4-8-8-9-12"/></svg>' },
+  { id:'pizzas', nombre:'Pizzas', color:null,
+    svg:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 20h20L12 2Z"/><path d="M12 2v18"/></svg>' },
+  { id:'healthy', nombre:'Menú Healthy', color:'#2d6a2d',
+    svg:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>' },
+  { id:'cafeteria', nombre:'Cafetería', color:null,
+    svg:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8Z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>' },
+  { id:'alcohol', nombre:'Bebidas c/ Alcohol', color:null,
+    svg:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 22h8"/><path d="M12 11v11"/><path d="M17 2H7l5 9 5-9Z"/></svg>' },
+  { id:'sin-alcohol', nombre:'Bebidas Sin Alcohol', color:null,
+    svg:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 2h8l1 8H7L8 2Z"/><path d="M7 10c0 5 2 8 5 10 3-2 5-5 5-10"/></svg>' },
+]
+
+async function loadMenu() {
+  const cont = document.getElementById('menu-cats-container')
+  if (!cont) return
+  const { data, error } = await sbClient.from('menu_items')
+    .select('categoria,nombre,nota,orden').eq('activo', true).order('orden')
+  if (error || !data || !data.length) {
+    cont.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:2rem;color:var(--crema-dim)">Sin información disponible en este momento.</div>'
+    return
+  }
+  cont.innerHTML = MENU_CATS_DEF.map(cat => {
+    const items = data.filter(i => i.categoria === cat.id)
+    if (!items.length) return ''
+    const headStyle = cat.color ? `style="background:${cat.color}"` : ''
+    const rows = items.map(item => `
+      <div class="menu-row">
+        <span class="menu-item-name">${item.nombre}</span>
+      </div>
+      ${item.nota ? `<div class="menu-row"><span class="menu-item-name" style="font-size:0.78rem;color:var(--crema-dim)">${item.nota}</span></div>` : ''}
+    `).join('')
+    return `
+      <div class="menu-cat">
+        <div class="menu-cat-head" ${headStyle}>
+          ${cat.svg}
+          <span class="menu-cat-title">${cat.nombre}</span>
+        </div>
+        <div class="menu-cat-body">${rows}</div>
+      </div>`
+  }).join('')
+}
 // ── SCROLL REVEAL ──────────────────────────────────────
 // ── REVEAL scroll observer ──────────────────────────
 const revealObserver = new IntersectionObserver((entries) => {
@@ -2069,10 +2011,20 @@ const statsObserver = new IntersectionObserver((entries) => {
       statsObserver.unobserve(e.currentTarget);
     }
   });
-}, { threshold: 0.5 });
+}, { threshold: 0.1 });
 
 const statsBand = document.querySelector('.stats-band');
-if (statsBand) statsObserver.observe(statsBand);
+if (statsBand) {
+  statsObserver.observe(statsBand);
+  // Si ya está en el viewport al cargar (o el usuario viene de un anchor), animar de una
+  setTimeout(() => {
+    const r = statsBand.getBoundingClientRect();
+    if (r.top < window.innerHeight && r.bottom > 0) {
+      statsBand.querySelectorAll('.stat-num[data-count]').forEach(animateCount);
+      statsObserver.unobserve(statsBand);
+    }
+  }, 50);
+}
 
 // ── PARALLAX suave en hero ───────────────────────────
 const heroInner = document.querySelector('.hero-inner');
