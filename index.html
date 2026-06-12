@@ -1376,9 +1376,15 @@ document.querySelectorAll('.nav-links a').forEach(a => a.addEventListener('click
 
 function businessDateStr() {
   const now = new Date();
-  if (now.getHours() < 8) {
-    const ayer = new Date(now); ayer.setDate(ayer.getDate() - 1);
-    return ayer.toISOString().split('T')[0];
+  const h = now.getHours();
+  if (h < 8) {
+    const nowExt = h + now.getMinutes() / 60 + 24;
+    if (nowExt < 25) {
+      // Antes de la 01:00 — todavía dentro de la jornada anterior (último slot: 01:00)
+      const ayer = new Date(now); ayer.setDate(ayer.getDate() - 1);
+      return ayer.toISOString().split('T')[0];
+    }
+    // 01:00 AM o más tarde — el último slot ya pasó, mostrar el día real de hoy
   }
   return now.toISOString().split('T')[0];
 }
