@@ -1,0 +1,2886 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Break Point — Panel Admin</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --azul:         #2563B0;
+      --azul-dark:    #1a4a8a;
+      --azul-deep:    #0d2548;
+      --azul-mid:     #1e3f7a;
+      --azul-dim:     rgba(37,99,176,0.15);
+      --azul-borde:   rgba(37,99,176,0.22);
+      --naranja:      #E8761A;
+      --naranja-dark: #c45e0f;
+      --naranja-dim:  rgba(232,118,26,0.15);
+      --verde:        #22c55e;
+      --verde-dim:    rgba(34,197,94,0.15);
+      --rojo:         #ef4444;
+      --rojo-dim:     rgba(239,68,68,0.15);
+      --amarillo:     #f59e0b;
+      --amarillo-dim: rgba(245,158,11,0.15);
+      --violeta:      #a855f7;
+      --violeta-dim:  rgba(168,85,247,0.15);
+      --blanco:       #ffffff;
+      --texto-dim:    rgba(255,255,255,0.5);
+      --texto-mid:    rgba(255,255,255,0.7);
+      --borde:        rgba(255,255,255,0.07);
+      --borde-2:      rgba(255,255,255,0.13);
+      --sidebar-w:    248px;
+    }
+    *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+    html { scroll-behavior:smooth; }
+    body { font-family:'Plus Jakarta Sans',sans-serif; background:var(--azul-dark); color:var(--blanco); overflow-x:hidden; }
+
+    ::-webkit-scrollbar { width:5px; height:5px; }
+    ::-webkit-scrollbar-track { background:transparent; }
+    ::-webkit-scrollbar-thumb { background:var(--borde-2); border-radius:4px; }
+
+    /* ══ LOGIN ══ */
+    #login-screen {
+      min-height:100vh; display:flex; align-items:center; justify-content:center;
+      background:radial-gradient(ellipse at 60% 40%, rgba(37,99,176,0.25) 0%, transparent 60%), var(--azul-deep);
+    }
+    .login-card {
+      background:var(--azul-mid); border:1px solid var(--borde-2);
+      border-radius:18px; padding:48px 40px; width:100%; max-width:400px;
+    }
+    .login-logo { text-align:center; margin-bottom:36px; }
+    .login-brand { font-size:24px; font-weight:800; }
+    .login-brand span { color:var(--naranja); }
+    .login-sub { font-size:13px; color:var(--texto-dim); margin-top:4px; }
+    .fgroup { margin-bottom:16px; }
+    .fgroup label { display:block; font-size:11px; font-weight:700; color:var(--texto-dim); margin-bottom:7px; text-transform:uppercase; letter-spacing:.07em; }
+    .fgroup input {
+      width:100%; padding:12px 15px; background:var(--azul-dark); border:1px solid var(--borde-2);
+      border-radius:9px; color:var(--blanco); font-family:inherit; font-size:15px; outline:none; transition:border-color .2s;
+    }
+    .fgroup input:focus { border-color:var(--naranja); }
+    .btn-primary {
+      width:100%; padding:13px; background:var(--naranja); color:#fff; border:none;
+      border-radius:9px; font-family:inherit; font-size:15px; font-weight:700; cursor:pointer; transition:background .2s; margin-top:6px;
+    }
+    .btn-primary:hover { background:var(--naranja-dark); }
+    .btn-demo {
+      width:100%; padding:11px; background:transparent; color:var(--texto-dim);
+      border:1px solid var(--borde-2); border-radius:9px; font-family:inherit; font-size:14px; cursor:pointer; transition:all .2s; margin-top:10px;
+    }
+    .btn-demo:hover { color:var(--blanco); background:var(--borde); }
+    #login-error { color:var(--rojo); font-size:13px; margin-top:8px; display:none; }
+
+    /* ══ APP LAYOUT ══ */
+    #app { display:none; min-height:100vh; }
+    #app.visible { display:flex; }
+
+    /* SIDEBAR */
+    #sidebar {
+      width:var(--sidebar-w); min-height:100vh; background:var(--azul-deep);
+      border-right:1px solid var(--borde); display:flex; flex-direction:column;
+      position:fixed; left:0; top:0; z-index:100;
+    }
+    .sb-header { padding:22px 18px 18px; border-bottom:1px solid var(--borde); }
+    .sb-brand { font-size:18px; font-weight:800; }
+    .sb-brand span { color:var(--naranja); }
+    .sb-sub { font-size:11px; color:var(--texto-dim); margin-top:2px; }
+    .sb-nav { flex:1; padding:10px; overflow-y:auto; }
+    .sb-label { font-size:10px; font-weight:700; color:var(--texto-dim); text-transform:uppercase; letter-spacing:.1em; padding:14px 10px 5px; }
+    .nav-item {
+      display:flex; align-items:center; gap:10px; padding:9px 12px; border-radius:8px;
+      cursor:pointer; font-size:14px; font-weight:500; color:var(--texto-mid); transition:all .15s;
+      margin-bottom:1px; border:none; background:none; width:100%; text-align:left;
+    }
+    .nav-item:hover { background:var(--borde); color:var(--blanco); }
+    .nav-item.active { background:var(--naranja-dim); color:var(--naranja); font-weight:700; }
+    .nav-item .ico { width:18px; height:18px; flex-shrink:0; display:flex; align-items:center; justify-content:center; }
+    .nav-item .ico svg { width:16px; height:16px; stroke:currentColor; fill:none; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
+    .sb-footer { padding:14px; border-top:1px solid var(--borde); }
+    .demo-badge {
+      background:var(--amarillo-dim); color:var(--amarillo); border:1px solid rgba(245,158,11,.25);
+      border-radius:7px; padding:7px 12px; font-size:12px; font-weight:700; text-align:center; margin-bottom:10px;
+    }
+    .btn-logout {
+      display:flex; align-items:center; gap:8px; width:100%; padding:9px 12px;
+      background:none; border:1px solid var(--borde-2); border-radius:8px;
+      color:var(--texto-dim); font-family:inherit; font-size:13px; cursor:pointer; transition:all .2s;
+    }
+    .btn-logout:hover { color:var(--rojo); border-color:rgba(239,68,68,.4); }
+
+    /* MAIN */
+    #main { margin-left:var(--sidebar-w); flex:1; min-height:100vh; display:flex; flex-direction:column; }
+    #topbar {
+      padding:16px 28px; border-bottom:1px solid var(--borde);
+      display:flex; align-items:center; justify-content:space-between;
+      position:sticky; top:0; background:var(--azul-dark); z-index:50;
+    }
+    .tb-title { font-size:20px; font-weight:800; }
+    .tb-date { font-size:13px; color:var(--texto-dim); margin-top:1px; }
+    #content { padding:26px; flex:1; overflow-x:hidden; }
+
+    /* SECTIONS */
+    .section { display:none; }
+    .section.active { display:block; }
+
+    /* CARDS */
+    .grid { display:grid; gap:14px; }
+    .g4 { grid-template-columns:repeat(4,1fr); }
+    .g3 { grid-template-columns:repeat(3,1fr); }
+    .g2 { grid-template-columns:repeat(2,1fr); }
+
+    .card {
+      background:var(--azul-mid); border:1px solid var(--borde);
+      border-radius:13px; padding:20px;
+    }
+    .card-t { font-size:11px; font-weight:700; color:var(--texto-dim); text-transform:uppercase; letter-spacing:.07em; margin-bottom:10px; }
+    .kpi-v { font-size:28px; font-weight:800; line-height:1.1; margin-bottom:5px; }
+    .kpi-sub { font-size:13px; font-weight:600; display:flex; align-items:center; gap:4px; color:var(--texto-dim); }
+    .kpi-sub.up { color:var(--verde); }
+    .kpi-sub.dn { color:var(--rojo); }
+    .accent { height:3px; border-radius:2px 2px 0 0; margin:-20px -20px 16px; }
+
+    .chart-card { background:var(--azul-mid); border:1px solid var(--borde); border-radius:13px; padding:20px; }
+    .chart-t { font-size:14px; font-weight:700; margin-bottom:16px; }
+
+    .sec-t { font-size:19px; font-weight:800; margin-bottom:18px; }
+    .sec-s { font-size:15px; font-weight:700; margin:22px 0 12px; }
+
+    /* GRILLA HOY */
+    .grilla-scroll::-webkit-scrollbar { height:6px }
+    .grilla-scroll::-webkit-scrollbar-track { background:rgba(255,255,255,.05); border-radius:3px }
+    .grilla-scroll::-webkit-scrollbar-thumb { background:rgba(255,255,255,.18); border-radius:3px }
+    .grilla-scroll::-webkit-scrollbar-thumb:hover { background:rgba(255,255,255,.32) }
+    .grilla { display:grid; gap:3px; }
+    .grilla-h { font-size:10px; font-weight:700; text-align:center; padding:5px 2px; color:var(--texto-dim); text-transform:uppercase; white-space:nowrap; }
+    .grilla-t { font-size:11px; font-weight:700; color:var(--texto-dim); display:flex; align-items:center; padding:0 8px; white-space:nowrap; }
+    .slot { border-radius:5px; height:32px; display:flex; align-items:center; justify-content:center; font-size:9px; font-weight:600; cursor:default; overflow:hidden; }
+    .slot.libre { background:rgba(34,197,94,.18); color:#4ade80; border:1px solid rgba(34,197,94,.3); }
+    .slot.ocupado { background:rgba(232,118,26,.22); color:#E8761A; border:1px solid rgba(232,118,26,.35); font-weight:700; }
+    .slot.ocupado-cont { background:rgba(232,118,26,.10); color:rgba(232,118,26,.55); border:1px solid rgba(232,118,26,.2); font-size:10px; }
+    .slot.fijo { background:rgba(139,92,246,.22); color:#a78bfa; border:1px solid rgba(139,92,246,.35); font-weight:600; }
+    .slot.fijo-cont { background:rgba(139,92,246,.10); color:rgba(139,92,246,.5); border:1px solid rgba(139,92,246,.2); font-size:10px; }
+    .dia-cb { display:flex;align-items:center;gap:4px;background:var(--azul-dark);border:1px solid var(--borde-2);border-radius:6px;padding:5px 10px;cursor:pointer;font-size:12px;font-weight:600;color:var(--blanco);transition:.15s; }
+    .dia-cb:has(input:checked) { border-color:var(--naranja);background:rgba(232,118,26,.15);color:var(--naranja); }
+    .dia-cb input { accent-color:var(--naranja);width:13px;height:13px; }
+    .slot.pasado-libre { background:var(--borde); color:var(--texto-dim); opacity:.4; }
+    .slot.pasado-ocup { background:rgba(255,255,255,.06); color:var(--texto-dim); border:1px solid rgba(255,255,255,.08); font-style:italic; }
+
+    /* HEATMAP */
+    .heatmap { display:grid; grid-template-columns:62px repeat(7,1fr); gap:3px; min-width:560px; }
+    .hm-head { font-size:10px; font-weight:700; color:var(--texto-dim); text-align:center; padding:5px 2px; text-transform:uppercase; }
+    .hm-time { font-size:11px; color:var(--texto-dim); padding:0 6px; display:flex; align-items:center; }
+    .hm-cell { border-radius:5px; height:34px; display:flex; align-items:center; justify-content:center; font-size:10px; font-weight:700; cursor:default; transition:transform .1s; }
+    .hm-cell:hover { transform:scale(1.07); }
+
+    /* TABLE */
+    .tbl-wrap { overflow-x:auto; }
+    table { width:100%; border-collapse:collapse; font-size:14px; }
+    thead th { padding:9px 14px; text-align:left; font-size:10px; font-weight:700; color:var(--texto-dim); text-transform:uppercase; letter-spacing:.07em; border-bottom:1px solid var(--borde-2); }
+    tbody td { padding:11px 14px; border-bottom:1px solid var(--borde); }
+    tbody tr:last-child td { border-bottom:none; }
+    tbody tr:hover td { background:rgba(255,255,255,.025); }
+
+    .badge { display:inline-flex; align-items:center; padding:3px 9px; border-radius:20px; font-size:11px; font-weight:700; }
+    .badge.confirmada { background:var(--verde-dim); color:var(--verde); }
+    .badge.cancelada { background:var(--rojo-dim); color:var(--rojo); }
+    .badge.pendiente { background:var(--amarillo-dim); color:var(--amarillo); }
+
+    /* BUTTONS */
+    .btn { padding:8px 16px; border-radius:8px; font-family:inherit; font-size:13px; font-weight:600; cursor:pointer; border:none; transition:all .15s; }
+    .btn-orange { background:var(--naranja); color:#fff; }
+    .btn-orange:hover { background:var(--naranja-dark); }
+    .btn-outline { background:none; border:1px solid var(--borde-2); color:var(--blanco); }
+    .btn-outline:hover { background:var(--borde); }
+    .btn-danger { background:var(--rojo-dim); color:var(--rojo); border:1px solid rgba(239,68,68,.25); }
+    .btn-danger:hover { background:var(--rojo); color:#fff; }
+    .btn-sm { padding:4px 10px; font-size:12px; }
+    .ac-wrap { position:relative; }
+    .ac-drop { position:absolute;top:100%;left:0;right:0;background:#1a3060;border:1px solid var(--borde-2);border-radius:8px;z-index:200;max-height:160px;overflow-y:auto;margin-top:3px; }
+    .ac-item { padding:9px 12px;font-size:13px;cursor:pointer;border-bottom:1px solid var(--borde); }
+    .ac-item:last-child { border-bottom:none; }
+    .ac-item:hover { background:var(--azul-mid); }
+    .ac-item strong { color:var(--blanco); display:block; }
+    .ac-item span { color:var(--texto-dim);font-size:11px; }
+
+    /* FILTERS */
+    .filters { display:flex; gap:10px; flex-wrap:wrap; margin-bottom:14px; align-items:center; }
+    .finput { padding:9px 13px; background:var(--azul-mid); border:1px solid var(--borde-2); border-radius:8px; color:var(--blanco); font-family:inherit; font-size:13px; outline:none; }
+    .finput:focus { border-color:var(--naranja); }
+    select.finput option { background:var(--azul-deep); }
+
+    /* MODAL */
+    .modal-ov { position:fixed; inset:0; background:rgba(0,0,0,.75); z-index:1000; display:flex; align-items:center; justify-content:center; padding:20px; }
+    .modal { background:var(--azul-deep); border:1px solid var(--borde-2); border-radius:16px; padding:30px; width:100%; max-width:490px; }
+    .modal-t { font-size:18px; font-weight:800; margin-bottom:22px; }
+    .modal-footer { display:flex; gap:10px; justify-content:flex-end; margin-top:22px; }
+    .row2 { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:12px; }
+    .fgsm label { display:block; font-size:11px; font-weight:700; color:var(--texto-dim); margin-bottom:6px; text-transform:uppercase; letter-spacing:.05em; }
+    .fgsm input, .fgsm select {
+      width:100%; padding:10px 12px; background:var(--azul-dark); border:1px solid var(--borde-2);
+      border-radius:8px; color:var(--blanco); font-family:inherit; font-size:14px; outline:none;
+    }
+    .fgsm input:focus, .fgsm select:focus { border-color:var(--naranja); }
+    .fgsm select option { background:var(--azul-deep); }
+
+    /* REC CARDS */
+    .rec-card { background:var(--azul-mid); border:1px solid var(--borde); border-radius:12px; padding:18px; display:flex; gap:15px; align-items:flex-start; margin-bottom:10px; }
+    .rec-ico { width:44px; height:44px; border-radius:10px; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+    .rec-ico svg { stroke:currentColor; }
+    .rec-ico.promo { background:var(--verde-dim); color:var(--verde); }
+    .rec-ico.precio { background:var(--naranja-dim); color:var(--naranja); }
+    .rec-ico.alerta { background:var(--rojo-dim); color:var(--rojo); }
+    .rec-ico.info { background:var(--azul-dim); color:#60a5fa; }
+    .rec-body h4 { font-size:15px; font-weight:700; margin-bottom:4px; }
+    .rec-body p { font-size:13px; color:var(--texto-mid); line-height:1.55; }
+    .rec-tag { display:inline-block; padding:2px 8px; border-radius:4px; font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.06em; margin-top:7px; }
+    .rec-tag.promo { background:var(--verde-dim); color:var(--verde); }
+    .rec-tag.precio { background:var(--naranja-dim); color:var(--naranja); }
+    .rec-tag.alerta { background:var(--rojo-dim); color:var(--rojo); }
+    .rec-tag.info { background:var(--azul-dim); color:#60a5fa; }
+
+    /* CLIENTES */
+    .cli-row { display:flex; align-items:center; justify-content:space-between; padding:11px 0; border-bottom:1px solid var(--borde); }
+    .cli-row:last-child { border-bottom:none; }
+    .cli-av { width:35px; height:35px; border-radius:50%; background:var(--naranja-dim); color:var(--naranja); font-weight:800; font-size:14px; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+    .cli-av.inac { background:var(--rojo-dim); color:var(--rojo); }
+    .cli-name { font-size:14px; font-weight:600; }
+    .cli-meta { font-size:12px; color:var(--texto-dim); }
+    .cli-count { font-size:15px; font-weight:800; color:var(--naranja); }
+    .cli-total { font-size:11px; color:var(--texto-dim); }
+
+    /* PROGRESS */
+    .pb-wrap { background:var(--borde); border-radius:4px; height:7px; overflow:hidden; margin-top:5px; }
+    .pb-fill { height:100%; border-radius:4px; transition:width .5s ease; }
+
+    /* UPCOMING */
+    .upc-item { display:flex; align-items:center; gap:13px; padding:11px 0; border-bottom:1px solid var(--borde); }
+    .upc-item:last-child { border-bottom:none; }
+    .upc-hora { font-size:16px; font-weight:800; color:var(--naranja); width:50px; flex-shrink:0; }
+
+    /* RESUMEN */
+    .res-header { background:var(--azul-deep); border:1px solid var(--borde); border-radius:14px; padding:26px; margin-bottom:18px; }
+    .res-title { font-size:22px; font-weight:800; margin-bottom:3px; }
+    .res-sub { font-size:13px; color:var(--texto-dim); }
+
+    .chip { display:inline-flex; align-items:center; padding:5px 11px; border-radius:7px; font-size:12px; font-weight:700; }
+    .chip.best { background:var(--verde-dim); color:var(--verde); }
+    .chip.worst { background:var(--rojo-dim); color:var(--rojo); }
+    .chip.orange { background:var(--naranja-dim); color:var(--naranja); }
+    .chip.info { background:var(--azul-dim); color:#60a5fa; }
+
+    /* RESPONSIVE */
+    @media(max-width:1100px) { .g4 { grid-template-columns:repeat(2,1fr); } }
+    @media(max-width:800px) {
+      :root { --sidebar-w:0px; }
+      #sidebar { display:none; }
+      .g4,.g3,.g2 { grid-template-columns:1fr; }
+      #content { padding:14px; }
+    }
+
+    /* MODAL-BOX (fijos + WA overlay) */
+    .modal-box {
+      background:var(--azul-deep); border:1px solid var(--borde-2);
+      border-radius:16px; padding:26px; box-shadow:0 24px 64px rgba(0,0,0,.5);
+    }
+    .modal-title { font-size:18px; font-weight:800; margin-bottom:20px; }
+
+    /* fin-kpi-btn */
+    .fin-kpi-btn { position:relative; overflow:hidden; }
+
+    /* ══ ANIMACIONES ══ */
+    @keyframes fadeUp    { from{opacity:0;transform:translateY(18px)} to{opacity:1;transform:translateY(0)} }
+    @keyframes fadeIn    { from{opacity:0} to{opacity:1} }
+    @keyframes scaleIn   { from{opacity:0;transform:scale(.94)} to{opacity:1;transform:scale(1)} }
+    @keyframes modalIn   { from{opacity:0;transform:translateY(22px) scale(.96)} to{opacity:1;transform:translateY(0) scale(1)} }
+    @keyframes slideLeft { from{opacity:0;transform:translateX(-18px)} to{opacity:1;transform:translateX(0)} }
+    @keyframes slideDown { from{opacity:0;transform:translateY(-8px)} to{opacity:1;transform:translateY(0)} }
+    @keyframes ripple    { to{transform:scale(4);opacity:0} }
+    @keyframes accentSlide { from{width:0} to{width:100%} }
+    @keyframes kpiBounce { 0%{opacity:0;transform:translateY(6px)} 60%{transform:translateY(-2px)} 100%{opacity:1;transform:translateY(0)} }
+
+    /* Login */
+    .login-card { animation: scaleIn .45s cubic-bezier(.16,1,.3,1) both }
+
+    /* Sidebar */
+    #sidebar { animation: slideLeft .4s cubic-bezier(.16,1,.3,1) both }
+    .nav-item { position:relative; overflow:hidden }
+    .nav-item::after {
+      content:''; position:absolute; left:0; top:50%;
+      transform:translateY(-50%) scaleY(0);
+      width:3px; height:65%; background:var(--naranja);
+      border-radius:0 2px 2px 0;
+      transition:transform .22s cubic-bezier(.16,1,.3,1);
+    }
+    .nav-item.active::after { transform:translateY(-50%) scaleY(1) }
+    .nav-item:hover { transform:translateX(2px) }
+
+    /* Topbar */
+    #topbar { transition:border-color .3s }
+    .tb-title { animation:fadeIn .4s .1s both }
+
+    /* Section */
+    .section.active { animation: fadeUp .32s cubic-bezier(.16,1,.3,1) both }
+
+    /* Cards hover lift */
+    .card, .chart-card {
+      transition:transform .22s cubic-bezier(.16,1,.3,1), box-shadow .22s, border-color .22s;
+      will-change:transform;
+    }
+    .card:hover, .chart-card:hover {
+      transform:translateY(-3px);
+      box-shadow:0 12px 32px rgba(0,0,0,.3);
+      border-color:var(--borde-2);
+    }
+    /* KPI count bounce */
+    .kpi-v { animation:kpiBounce .45s cubic-bezier(.16,1,.3,1) both }
+
+    /* Modal */
+    .modal-ov { animation:fadeIn .2s ease both }
+    .modal    { animation:modalIn .32s cubic-bezier(.16,1,.3,1) both }
+
+    /* Buttons */
+    .btn,.btn-primary,.btn-orange,.btn-outline,.btn-danger,.btn-demo,.btn-logout { position:relative; overflow:hidden }
+    .btn         { transition:transform .12s,box-shadow .12s,background .15s }
+    .btn:active  { transform:scale(.96) }
+    .btn-primary { transition:background .15s,transform .12s,box-shadow .15s }
+    .btn-primary:active { transform:scale(.96) }
+    .btn-orange:hover   { box-shadow:0 4px 16px rgba(232,118,26,.35) }
+    .btn-orange:active  { transform:scale(.96) }
+    .btn-outline:active { transform:scale(.96) }
+    .btn-danger:active  { transform:scale(.96) }
+
+    /* Rec cards */
+    .rec-card { transition:transform .2s cubic-bezier(.16,1,.3,1),box-shadow .2s,border-color .2s }
+    .rec-card:hover { transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,.22);border-color:var(--borde-2) }
+
+    /* Slots hover */
+    .slot { transition:transform .1s,filter .1s }
+    .slot.libre:hover,.slot.ocupado:hover,.slot.fijo:hover { transform:scale(1.1);filter:brightness(1.18);z-index:2;position:relative }
+
+    /* Heatmap */
+    .hm-cell { transition:transform .12s,filter .12s }
+    .hm-cell:hover { transform:scale(1.1);filter:brightness(1.2);z-index:2;position:relative }
+
+    /* Inputs */
+    .finput { transition:border-color .2s,box-shadow .2s }
+    .finput:focus { box-shadow:0 0 0 3px rgba(232,118,26,.12) }
+    .fgsm input:focus,.fgsm select:focus { box-shadow:0 0 0 3px rgba(232,118,26,.12) }
+    .fgroup input:focus { box-shadow:0 0 0 3px rgba(232,118,26,.12) }
+
+    /* Autocomplete */
+    .ac-drop { animation:slideDown .15s ease both }
+
+    /* Table rows stagger */
+    tbody tr { transition:background .12s }
+
+    /* Badges */
+    .badge { transition:transform .15s }
+    .badge:hover { transform:scale(1.06) }
+
+    /* Stagger helper */
+    .anim-stagger { animation:fadeUp .38s cubic-bezier(.16,1,.3,1) both }
+
+    /* Accent bar animate on card */
+    .accent { animation:accentSlide .5s cubic-bezier(.16,1,.3,1) both }
+
+    /* Progress bars */
+    .pb-fill { transition:width .7s cubic-bezier(.16,1,.3,1) }
+
+    /* Chip hover */
+    .chip { transition:transform .15s }
+    .chip:hover { transform:scale(1.04) }
+
+    /* Nav items stagger on load */
+    .nav-item:nth-child(1){animation:fadeIn .3s .05s both}
+    .nav-item:nth-child(2){animation:fadeIn .3s .1s both}
+    .nav-item:nth-child(3){animation:fadeIn .3s .15s both}
+    .nav-item:nth-child(4){animation:fadeIn .3s .2s both}
+    .nav-item:nth-child(5){animation:fadeIn .3s .25s both}
+    .nav-item:nth-child(6){animation:fadeIn .3s .3s both}
+    .nav-item:nth-child(7){animation:fadeIn .3s .35s both}
+    .nav-item:nth-child(8){animation:fadeIn .3s .4s both}
+    /* ── Menú Admin ── */
+    .menu-admin-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:16px; }
+    .menu-admin-cat { background:var(--card); border:1px solid var(--borde-2); border-radius:12px; overflow:hidden; }
+    .menu-admin-cat-head { display:flex; align-items:center; gap:10px; padding:12px 16px; background:var(--azul-mid,#1a3a6b); color:#fff; font-size:0.8rem; font-weight:700; letter-spacing:.5px; text-transform:uppercase; }
+    .menu-admin-cat-head svg { flex-shrink:0; opacity:.85; }
+    .menu-admin-items { padding:6px 0; }
+    .menu-admin-row { display:flex; align-items:center; gap:8px; padding:7px 14px; border-bottom:1px solid var(--borde); font-size:13px; }
+    .menu-admin-row:last-child { border-bottom:none; }
+    .menu-admin-row.inactivo { opacity:.45; }
+    .menu-admin-name { flex:1; color:var(--texto); }
+    .menu-admin-nota { font-size:11px; color:var(--texto-dim); }
+    .menu-toggle { width:32px; height:18px; border-radius:9px; border:none; cursor:pointer; position:relative; flex-shrink:0; transition:background .2s; }
+    .menu-toggle.on  { background:var(--verde,#22c55e); }
+    .menu-toggle.off { background:var(--borde); }
+    .menu-toggle::after { content:''; position:absolute; top:2px; width:14px; height:14px; border-radius:50%; background:#fff; transition:left .2s; }
+    .menu-toggle.on::after  { left:16px; }
+    .menu-toggle.off::after { left:2px; }
+    .menu-del-btn { background:none; border:none; cursor:pointer; color:var(--rojo,#ef4444); opacity:.6; padding:2px 4px; border-radius:4px; font-size:14px; line-height:1; transition:opacity .15s; }
+    .menu-del-btn:hover { opacity:1; }
+    .menu-add-row { display:flex; align-items:center; gap:6px; padding:8px 14px; border-top:1px solid var(--borde); }
+    .menu-add-inp { flex:1; background:var(--input-bg,rgba(255,255,255,.07)); border:1px solid var(--borde-2); border-radius:6px; color:var(--texto); font-size:12px; padding:5px 8px; outline:none; }
+    .menu-add-inp:focus { border-color:var(--azul); }
+    .menu-add-btn { background:var(--azul); border:none; color:#fff; border-radius:6px; padding:5px 10px; font-size:11px; font-weight:700; cursor:pointer; white-space:nowrap; transition:background .15s; }
+    .menu-add-btn:hover { background:var(--naranja); }
+  </style>
+</head>
+<body>
+
+<!-- ══════════════ LOGIN ══════════════ -->
+<div id="login-screen">
+  <div class="login-card">
+    <div class="login-logo">
+      <div class="login-brand">Break<span>Point</span></div>
+      <div class="login-sub">Panel de Administración</div>
+    </div>
+    <div class="fgroup">
+      <label>Email</label>
+      <input type="email" id="l-email" placeholder="Email">
+    </div>
+    <div class="fgroup">
+      <label>Contraseña</label>
+      <input type="password" id="l-pass" placeholder="Contraseña">
+    </div>
+    <div id="login-error"></div>
+    <button class="btn-primary" onclick="doLogin()">Ingresar</button>
+  </div>
+</div>
+
+<!-- ══════════════ APP ══════════════ -->
+<div id="app">
+
+  <nav id="sidebar">
+    <div class="sb-header">
+      <div class="sb-brand">Break<span>Point</span></div>
+      <div class="sb-sub">Panel Admin</div>
+    </div>
+    <div class="sb-nav">
+      <div class="sb-label">Principal</div>
+      <button class="nav-item active" data-s="hoy" onclick="navigate('hoy')"><span class="ico"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg></span> Hoy</button>
+      <button class="nav-item" data-s="reservas" onclick="navigate('reservas')"><span class="ico"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></span> Reservas</button>
+      <button class="nav-item" data-s="horarios-fijos" onclick="navigate('horarios-fijos')"><span class="ico"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></span> Horarios fijos</button>
+      <div class="sb-label">Análisis</div>
+      <button class="nav-item" data-s="financiero" onclick="navigate('financiero')"><span class="ico"><svg viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></span> Financiero</button>
+      <button class="nav-item" data-s="ocupacion" onclick="navigate('ocupacion')"><span class="ico"><svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></span> Ocupación</button>
+      <button class="nav-item" data-s="clientes" onclick="navigate('clientes')"><span class="ico"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span> Clientes</button>
+      <button class="nav-item" data-s="resumen" onclick="navigate('resumen')"><span class="ico"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="8" y1="14" x2="8" y2="14"/><line x1="12" y1="14" x2="12" y2="14"/><line x1="16" y1="14" x2="16" y2="14"/></svg></span> Resumen semanal</button>
+      <div class="sb-label">Kiosco</div>
+      <button class="nav-item" data-s="menu" onclick="navigate('menu')"><span class="ico"><svg viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="13" y2="16"/></svg></span> Menú del kiosco</button>
+      <div class="sb-label">Inteligencia</div>
+      <button class="nav-item" data-s="recomendaciones" onclick="navigate('recomendaciones')"><span class="ico"><svg viewBox="0 0 24 24"><line x1="12" y1="2" x2="12" y2="6"/><path d="M12 6a6 6 0 0 1 6 6c0 2.5-1.5 4.5-3 6H9c-1.5-1.5-3-3.5-3-6a6 6 0 0 1 6-6z"/><line x1="9" y1="22" x2="15" y2="22"/><line x1="10" y1="19" x2="14" y2="19"/></svg></span> Recomendaciones</button>
+    </div>
+    <div class="sb-footer">
+      <div id="demo-badge" class="demo-badge" style="display:none">Modo Demo</div>
+      <button class="btn-logout" onclick="doLogout()"><span>⬅</span> Cerrar sesión</button>
+    </div>
+  </nav>
+
+  <div id="main">
+    <div id="topbar">
+      <div>
+        <div class="tb-title" id="tb-title">Hoy</div>
+        <div class="tb-date" id="tb-date"></div>
+      </div>
+    </div>
+    <div id="content">
+
+      <!-- HOY -->
+      <div class="section active" id="section-hoy">
+        <!-- Selector de día -->
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:20px">
+          <button onclick="navegarDia(-1)" style="background:var(--azul-dark);border:1px solid var(--borde-2);border-radius:8px;color:var(--texto-dim);width:34px;height:34px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:.15s" onmouseover="this.style.borderColor='var(--naranja)'" onmouseout="this.style.borderColor='var(--borde-2)'">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+          </button>
+          <input type="date" id="grilla-dia-input" onchange="onGrillaDia()" style="background:var(--azul-dark);border:1px solid var(--borde-2);border-radius:8px;color:var(--blanco);padding:6px 12px;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer">
+          <button onclick="navegarDia(1)" style="background:var(--azul-dark);border:1px solid var(--borde-2);border-radius:8px;color:var(--texto-dim);width:34px;height:34px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:.15s" onmouseover="this.style.borderColor='var(--naranja)'" onmouseout="this.style.borderColor='var(--borde-2)'">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+          </button>
+          <button onclick="irHoy()" id="btn-ir-hoy" style="display:none;background:rgba(232,118,26,.15);border:1px solid rgba(232,118,26,.35);border-radius:8px;color:var(--naranja);padding:6px 14px;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer">Volver a hoy</button>
+        </div>
+        <div class="grid g4" id="hoy-kpis" style="margin-bottom:20px"></div>
+        <div class="card" style="margin-bottom:16px">
+          <div class="card-t">Grilla del día — canchas × horarios</div>
+          <div style="overflow-x:auto;max-width:calc(100vw - var(--sidebar-w) - 92px);padding-bottom:6px" id="grilla-hoy" class="grilla-scroll"></div>
+          <div id="grilla-leyenda" style="margin-top:10px"></div>
+        </div>
+        <div class="card">
+          <div class="card-t" style="display:flex;align-items:center;gap:8px">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+            <span id="upcoming-title">Próximas reservas hoy</span>
+          </div>
+          <div id="upcoming"></div>
+        </div>
+      </div>
+
+      <!-- FINANCIERO -->
+      <div class="section" id="section-financiero">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:20px">
+          <label style="font-size:12px;font-weight:700;color:var(--texto-dim);text-transform:uppercase;letter-spacing:.06em">Período</label>
+          <select id="fin-mes-sel" onchange="renderFinanciero()" style="background:var(--azul-dark);border:1px solid var(--borde-2);border-radius:8px;color:var(--blanco);padding:6px 12px;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer"></select>
+        </div>
+        <div class="grid g4" id="fin-kpis" style="margin-bottom:12px"></div>
+        <div id="fin-detalle" style="display:none;margin-bottom:16px"></div>
+        <div class="grid g2" style="margin-bottom:16px">
+          <div class="chart-card">
+            <div class="chart-t">Ingresos últimos 14 días</div>
+            <div style="height:210px"><canvas id="c-ing14"></canvas></div>
+          </div>
+          <div class="chart-card">
+            <div class="chart-t">Este mes vs mes anterior</div>
+            <div style="height:210px"><canvas id="c-mvm"></canvas></div>
+          </div>
+        </div>
+        <div class="grid g2" style="margin-bottom:16px">
+          <div class="chart-card">
+            <div class="chart-t">Ingresos por cancha (mes actual)</div>
+            <div style="height:210px"><canvas id="c-cancha"></canvas></div>
+          </div>
+          <div class="card" id="fin-proy"></div>
+        </div>
+        <div class="chart-card" id="fin-tipos"></div>
+      </div>
+
+      <!-- OCUPACION -->
+      <div class="section" id="section-ocupacion">
+        <div class="grid g4" id="ocup-kpis" style="margin-bottom:20px"></div>
+        <div class="card" style="margin-bottom:16px">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:10px">
+            <div class="card-t" style="margin:0" id="ocup-heatmap-title">Mapa de calor — días × horarios</div>
+            <div style="display:flex;gap:6px;flex-wrap:wrap">
+              <button onclick="setOcupPeriodo(7)"   id="ocup-btn-7"   class="btn btn-sm" style="font-size:11px">7 días</button>
+              <button onclick="setOcupPeriodo(14)"  id="ocup-btn-14"  class="btn btn-sm" style="font-size:11px">14 días</button>
+              <button onclick="setOcupPeriodo(28)"  id="ocup-btn-28"  class="btn btn-sm btn-orange" style="font-size:11px">28 días</button>
+              <button onclick="setOcupPeriodo(90)"  id="ocup-btn-90"  class="btn btn-sm" style="font-size:11px">3 meses</button>
+              <button onclick="setOcupPeriodo(180)" id="ocup-btn-180" class="btn btn-sm" style="font-size:11px">6 meses</button>
+            </div>
+          </div>
+          <div style="overflow-x:auto" id="heatmap"></div>
+          <div style="display:flex;gap:16px;margin-top:12px;font-size:12px;color:var(--texto-dim)">
+            <span style="display:inline-flex;align-items:center;gap:5px"><span style="width:12px;height:12px;border-radius:3px;background:rgba(239,68,68,.4);display:inline-block"></span>Sin demanda</span>
+            <span style="display:inline-flex;align-items:center;gap:5px"><span style="width:12px;height:12px;border-radius:3px;background:rgba(245,158,11,.4);display:inline-block"></span>Baja &lt;30%</span>
+            <span style="display:inline-flex;align-items:center;gap:5px"><span style="width:12px;height:12px;border-radius:3px;background:rgba(37,99,176,.6);display:inline-block"></span>Media 30-60%</span>
+            <span style="display:inline-flex;align-items:center;gap:5px"><span style="width:12px;height:12px;border-radius:3px;background:rgba(22,163,74,.7);display:inline-block"></span>Alta &gt;60%</span>
+          </div>
+        </div>
+        <div class="grid g2">
+          <div class="card" id="ocup-mejores"></div>
+          <div class="card" id="ocup-peores"></div>
+        </div>
+      </div>
+
+      <!-- CLIENTES -->
+      <div class="section" id="section-clientes">
+        <div class="grid g3" id="cli-kpis" style="margin-bottom:20px"></div>
+        <div class="grid g2">
+          <div class="card">
+            <div class="card-t">Top 10 clientes frecuentes</div>
+            <div id="top-cli"></div>
+          </div>
+          <div class="card">
+            <div class="card-t">Clientes inactivos +30 días</div>
+            <div id="cli-inac"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- RECOMENDACIONES -->
+      <div class="section" id="section-recomendaciones">
+        <p style="color:var(--texto-dim);font-size:14px;margin-bottom:18px">Análisis automático basado en los últimos 30 días de reservas.</p>
+        <div id="recs"></div>
+      </div>
+
+      <!-- RESERVAS -->
+      <div class="section" id="section-reservas">
+        <div class="filters">
+          <input type="date" class="finput" id="f-fecha" onchange="renderReservas()">
+          <select class="finput" id="f-cancha" onchange="renderReservas()">
+            <option value="">Todas las canchas</option>
+            <option>Cancha 1</option><option>Cancha 2</option><option>Cancha 3</option><option>Cancha 4</option>
+          </select>
+          <select class="finput" id="f-estado" onchange="renderReservas()">
+            <option value="">Todos los estados</option>
+            <option value="confirmada">Confirmada</option>
+            <option value="pendiente">Pendiente</option>
+            <option value="cancelada">Cancelada</option>
+          </select>
+          <input type="text" class="finput" id="f-cli" placeholder="Buscar cliente..." oninput="renderReservas()" style="flex:1;min-width:150px">
+          <button class="btn btn-orange" onclick="openModal()">+ Nueva reserva</button>
+        </div>
+        <div class="card">
+          <div class="tbl-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Fecha</th><th>Hora</th><th>Dur.</th><th>Cancha</th><th>Cliente</th>
+                  <th>Teléfono</th><th>Total</th><th>Seña / Saldo</th><th>Estado</th><th>Acciones</th>
+                </tr>
+              </thead>
+              <tbody id="res-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- HORARIOS FIJOS -->
+      <div class="section" id="section-horarios-fijos">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px">
+          <div>
+            <div class="sec-t" style="margin-bottom:4px">Horarios fijos</div>
+            <div style="font-size:13px;color:var(--texto-dim)">Bloques recurrentes semanales — clases, entrenamientos o reservas permanentes.</div>
+          </div>
+          <button class="btn btn-orange" onclick="openModalFijo()">+ Agregar bloque</button>
+        </div>
+        <div class="card" id="fijos-tabla">
+          <div style="color:var(--texto-dim);font-size:13px;padding:20px 0">No hay horarios fijos cargados.</div>
+        </div>
+        <div style="margin-top:16px;padding:14px 18px;background:rgba(139,92,246,.1);border:1px solid rgba(139,92,246,.25);border-radius:10px;font-size:12px;color:#a78bfa;line-height:1.8">
+          Los bloques fijos bloquean el slot y aparecen en la grilla con color violeta.<br>
+          <span style="color:#a78bfa;font-weight:700">Clase / Bloque</span> — ocupa el horario pero <strong>no suma revenue</strong> en el financiero.<br>
+          <span style="color:#E8761A;font-weight:700">Cliente fijo</span> — ocupa el horario <strong>y suma el monto por turno</strong> al financiero en cada ocurrencia del mes.
+        </div>
+      </div>
+
+      <!-- MENÚ DEL KIOSCO -->
+      <div class="section" id="section-menu">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px">
+          <div>
+            <div class="sec-t" style="margin-bottom:4px">Menú del kiosco</div>
+            <div style="font-size:13px;color:var(--texto-dim)">Activá, desactivá o agregá platos. Los cambios se reflejan en el sitio web al instante.</div>
+          </div>
+        </div>
+        <div class="menu-admin-grid" id="menu-admin-grid">
+          <div style="color:var(--texto-dim);font-size:13px;padding:20px 0">Cargando menú...</div>
+        </div>
+      </div>
+
+      <!-- RESUMEN SEMANAL -->
+      <div class="section" id="section-resumen">
+        <div class="res-header" id="res-head"></div>
+        <div class="grid g4" id="res-kpis" style="margin-bottom:20px"></div>
+        <div class="grid g2" style="margin-bottom:16px">
+          <div class="chart-card">
+            <div class="chart-t">Reservas por día esta semana</div>
+            <div style="height:200px"><canvas id="c-res-dias"></canvas></div>
+          </div>
+          <div class="card" id="res-highlights"></div>
+        </div>
+        <div class="card" id="res-conclu"></div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- MODAL RESERVA -->
+<div id="modal" class="modal-ov" style="display:none">
+  <div class="modal">
+    <div id="modal-form-content">
+    <div class="modal-t" id="modal-t">Nueva Reserva</div>
+    <!-- PASO 1: fecha + hora -->
+    <div id="modal-paso1">
+      <div class="row2" style="margin-bottom:12px">
+        <div class="fgsm"><label>Fecha</label><input type="date" id="m-fecha" onchange="populateHoraSelect('m-hora',true);checkDisponibilidad()"></div>
+        <div class="fgsm">
+          <label>Hora inicio</label>
+          <select id="m-hora" onchange="checkDisponibilidad()"></select>
+        </div>
+      </div>
+      <div class="row2" style="margin-bottom:12px">
+        <div class="fgsm">
+          <label>Duración</label>
+          <select id="m-duracion" onchange="checkDisponibilidad();calcSaldo()">
+            <option value="1">1 hora</option>
+            <option value="1.5">1 hora y media</option>
+            <option value="2">2 horas</option>
+            <option value="2.5">2 horas y media</option>
+            <option value="3">3 horas</option>
+          </select>
+        </div>
+        <div class="fgsm"></div>
+      </div>
+      <!-- Disponibilidad de canchas -->
+      <div id="m-disponibilidad" style="margin-bottom:14px"></div>
+    </div>
+    <!-- PASO 2: datos cliente (se muestra al seleccionar cancha) -->
+    <div id="modal-paso2" style="display:none">
+      <div style="background:var(--verde-dim);border:1px solid rgba(34,197,94,.25);border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:13px;font-weight:600;color:var(--verde)" id="m-resumen-slot"></div>
+      <div class="row2" style="margin-bottom:12px">
+        <div class="fgsm ac-wrap">
+          <label>Teléfono</label>
+          <input type="text" id="m-tel" placeholder="11 3456 7890" oninput="acBuscar()" autocomplete="off">
+          <div id="ac-drop" class="ac-drop" style="display:none"></div>
+        </div>
+        <div class="fgsm"><label>Nombre</label><input type="text" id="m-cli" placeholder="Juan Pérez" oninput="acBuscar()" autocomplete="off"></div>
+      </div>
+      <div class="row2" style="margin-bottom:12px">
+        <div class="fgsm"><label>Precio por hora ($)</label><input type="number" id="m-monto" placeholder="50000" oninput="calcSaldo()"></div>
+        <div class="fgsm"><label>Seña recibida ($)</label><input type="number" id="m-sena" placeholder="0" oninput="calcSaldo()"></div>
+      </div>
+      <div id="m-saldo-preview" style="background:rgba(37,99,176,.15);border:1px solid rgba(37,99,176,.3);border-radius:8px;padding:8px 14px;margin-bottom:12px;font-size:13px;font-weight:600;color:#93c5fd"></div>
+      <div class="row2">
+        <div class="fgsm">
+          <label>Estado</label>
+          <select id="m-estado"><option value="confirmada">Confirmada</option><option value="pendiente">Pendiente</option></select>
+        </div>
+        <div class="fgsm"></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal()">Cancelar</button>
+      <button class="btn btn-orange" id="btn-guardar" onclick="saveReserva()" style="display:none">Guardar</button>
+    </div>
+    </div><!-- /modal-form-content -->
+
+    <!-- PANTALLA CONFIRMACIÓN WA -->
+    <div id="modal-wa-screen" style="display:none;padding:8px 0">
+      <div style="text-align:center;margin-bottom:20px">
+        <div style="width:56px;height:56px;background:rgba(37,211,102,.15);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 12px">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#25D366" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+        </div>
+        <div style="font-size:18px;font-weight:800;color:var(--blanco);margin-bottom:4px">¡Reserva confirmada!</div>
+        <div style="font-size:13px;color:var(--texto-dim)" id="wa-nombre"></div>
+        <div style="font-size:12px;color:var(--texto-dim);margin-top:2px" id="wa-detalle"></div>
+      </div>
+      <div style="background:var(--azul-dark);border:1px solid var(--borde-2);border-radius:10px;padding:14px;margin-bottom:18px">
+        <div style="font-size:11px;font-weight:700;color:var(--texto-dim);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">Vista previa del mensaje</div>
+        <pre id="wa-msg-preview" style="font-family:inherit;font-size:12px;color:var(--blanco);white-space:pre-wrap;margin:0;line-height:1.6"></pre>
+      </div>
+      <div style="display:flex;gap:10px;justify-content:center">
+        <button class="btn btn-outline" onclick="closeModal()">Cerrar sin enviar</button>
+        <button id="wa-btn" class="btn" style="background:#25D366;color:#fff;font-weight:700;gap:8px;display:inline-flex;align-items:center">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347"/></svg>
+          Enviar por WhatsApp
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- OVERLAY WA FIJO -->
+<div id="overlay-wa-fijo" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:2000;align-items:center;justify-content:center">
+  <div class="modal-box" style="width:420px;max-width:92vw;padding:24px">
+    <div style="text-align:center;margin-bottom:20px">
+      <div style="width:56px;height:56px;background:rgba(37,211,102,.15);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 12px">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#25D366" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+      </div>
+      <div style="font-size:18px;font-weight:800;color:var(--blanco);margin-bottom:4px">¡Horario fijo registrado!</div>
+      <div style="font-size:13px;color:var(--texto-dim)" id="wa-fijo-nombre"></div>
+    </div>
+    <div style="background:var(--azul-dark);border:1px solid var(--borde-2);border-radius:10px;padding:14px;margin-bottom:18px">
+      <div style="font-size:11px;font-weight:700;color:var(--texto-dim);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">Vista previa del mensaje</div>
+      <pre id="wa-fijo-msg-preview" style="font-family:inherit;font-size:12px;color:var(--blanco);white-space:pre-wrap;margin:0;line-height:1.6"></pre>
+    </div>
+    <div style="display:flex;gap:10px;justify-content:center">
+      <button class="btn btn-outline" onclick="cerrarWAFijo()">Cerrar sin enviar</button>
+      <button id="wa-fijo-btn" class="btn" style="background:#25D366;color:#fff;font-weight:700;gap:8px;display:inline-flex;align-items:center">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347"/></svg>
+        Enviar por WhatsApp
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL HORARIO FIJO -->
+<div id="modal-fijo" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:1000;align-items:center;justify-content:center">
+  <div class="modal-box" style="width:460px;max-height:90vh;overflow-y:auto">
+    <div class="modal-title">Nuevo horario fijo</div>
+
+    <!-- PASO 1: días + hora + duración -->
+    <div id="mf-paso1">
+      <div class="fgsm" style="margin-bottom:12px">
+        <label>Días de la semana</label>
+        <div id="mf-dias" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px">
+          <label class="dia-cb"><input type="checkbox" value="1" onchange="populateMfInicio()"> Lun</label>
+          <label class="dia-cb"><input type="checkbox" value="2" onchange="populateMfInicio()"> Mar</label>
+          <label class="dia-cb"><input type="checkbox" value="3" onchange="populateMfInicio()"> Mié</label>
+          <label class="dia-cb"><input type="checkbox" value="4" onchange="populateMfInicio()"> Jue</label>
+          <label class="dia-cb"><input type="checkbox" value="5" onchange="populateMfInicio()"> Vie</label>
+          <label class="dia-cb"><input type="checkbox" value="6" onchange="populateMfInicio()"> Sáb</label>
+          <label class="dia-cb"><input type="checkbox" value="0" onchange="populateMfInicio()"> Dom</label>
+        </div>
+      </div>
+      <div class="row2" style="margin-bottom:12px">
+        <div class="fgsm">
+          <label>Hora inicio</label>
+          <select id="mf-inicio" onchange="mfResetCancha()"></select>
+        </div>
+        <div class="fgsm">
+          <label>Duración</label>
+          <select id="mf-duracion" onchange="mfResetCancha();mfCalcTotal()">
+            <option value="1">1 hora</option><option value="1.5">1 hora y media</option>
+            <option value="2">2 horas</option><option value="2.5">2 horas y media</option><option value="3">3 horas</option>
+          </select>
+        </div>
+      </div>
+      <!-- Disponibilidad de canchas -->
+      <div id="mf-disponibilidad" style="margin-bottom:12px"></div>
+      <button class="btn btn-orange" onclick="mfVerCanchas()" style="width:100%;margin-bottom:4px">Ver canchas disponibles</button>
+    </div>
+
+    <!-- PASO 2: tipo + datos (se muestra al seleccionar cancha) -->
+    <div id="mf-paso2" style="display:none;border-top:1px solid var(--borde);padding-top:14px;margin-top:4px">
+      <div style="background:rgba(139,92,246,.15);border:1px solid rgba(139,92,246,.3);border-radius:8px;padding:9px 14px;margin-bottom:14px;font-size:13px;font-weight:600;color:#a78bfa" id="mf-resumen"></div>
+      <!-- Tipo -->
+      <div class="fgsm" style="margin-bottom:12px">
+        <label>Tipo</label>
+        <div style="display:flex;gap:8px;margin-top:6px">
+          <label class="dia-cb" style="flex:1;justify-content:center"><input type="radio" name="mf-tipo" value="clase" checked onchange="mfTipoChange()"> Clase / Bloque</label>
+          <label class="dia-cb" style="flex:1;justify-content:center"><input type="radio" name="mf-tipo" value="cliente" onchange="mfTipoChange()"> Cliente fijo</label>
+        </div>
+      </div>
+      <!-- Solo para cliente fijo: teléfono primero para identificar -->
+      <div id="mf-campos-cliente" style="display:none;margin-bottom:12px">
+        <div class="fgsm" style="position:relative">
+          <label>Teléfono</label>
+          <input type="text" id="mf-tel" placeholder="11 3456 7890" oninput="acBuscarFijo()" autocomplete="off">
+          <div id="mf-ac-drop" style="display:none;position:absolute;left:0;right:0;top:100%;z-index:200;background:var(--azul-mid);border:1px solid var(--borde-2);border-radius:9px;overflow:hidden;box-shadow:0 8px 24px rgba(0,0,0,.4)"></div>
+        </div>
+      </div>
+      <div class="row2" style="margin-bottom:12px">
+        <div class="fgsm">
+          <label id="mf-etiqueta-label">Etiqueta / descripción</label>
+          <input type="text" id="mf-etiqueta" placeholder="Ej: Clases adultos / Nombre del cliente">
+        </div>
+        <div class="fgsm">
+          <label>Precio por hora ($)</label>
+          <input type="number" id="mf-precio-hora" placeholder="50000" oninput="mfCalcTotal()">
+        </div>
+      </div>
+      <div id="mf-total-preview" style="display:none;background:rgba(37,99,176,.15);border:1px solid rgba(37,99,176,.3);border-radius:8px;padding:7px 14px;margin-bottom:12px;font-size:13px;font-weight:600;color:#93c5fd"></div>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModalFijo()">Cancelar</button>
+      <button class="btn btn-orange" id="btn-guardar-fijo" onclick="saveHorarioFijo()" style="display:none">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ══════════════════════════════════════
+   CONFIG SUPABASE
+   Reemplazá los valores cuando tengas tu proyecto
+   ══════════════════════════════════════ */
+const SUPABASE_URL = 'https://ojilfuuxbzlnpnyzhsfv.supabase.co'
+const SUPABASE_KEY = 'sb_publishable_t6320_WgsiVL7i76LJtRIw__iD-LtEV'
+let sbClient = null
+
+/* ══════════════════════════════════════
+   CONSTANTES
+   ══════════════════════════════════════ */
+const CANCHAS  = ['Cancha 1','Cancha 2','Cancha 3','Cancha 4']
+// Horarios reales del complejo — varían por día
+// Lun–Vie: 08:00–02:00 | Sáb: 09:00–02:00 | Dom: 16:00–00:00
+function generarSlots(desde, hasta) {
+  const s=[]; let m=parseInt(desde)*60+parseInt(desde.split(':')[1]||0), e=parseInt(hasta)*60+parseInt(hasta.split(':')[1]||0); if(e<=m)e+=1440
+  while(m<e){const hh=Math.floor((m%1440)/60),mm=(m%1440)%60;s.push(String(hh).padStart(2,'0')+':'+String(mm).padStart(2,'0'));m+=30} return s
+}
+function toMinsDay(h){const[hh,mm]=h.split(':').map(Number),v=hh*60+mm;return v<480?v+1440:v}
+const HORARIOS_SEMANA=[
+  generarSlots('16:00','00:00'), // 0 Dom
+  generarSlots('08:00','02:00'), // 1 Lun
+  generarSlots('08:00','02:00'), // 2 Mar
+  generarSlots('08:00','02:00'), // 3 Mié
+  generarSlots('08:00','02:00'), // 4 Jue
+  generarSlots('08:00','02:00'), // 5 Vie
+  generarSlots('09:00','02:00'), // 6 Sáb
+]
+const HORARIOS=HORARIOS_SEMANA[1] // alias weekday (fallback y demo)
+function horariosDelDia(d){return HORARIOS_SEMANA[d]??HORARIOS_SEMANA[1]}
+function conteoDias(desde,hasta){const cnt=[0,0,0,0,0,0,0],d=new Date(desde+'T12:00:00'),e=new Date(hasta+'T12:00:00');while(d<=e){cnt[d.getDay()]++;d.setDate(d.getDate()+1)}return cnt}
+const DIAS_ES  = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado']
+const DIAS_C   = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb']
+const MESES    = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre']
+
+/* ══════════════════════════════════════
+   DATOS DEMO — genera 90 días con patrones realistas
+   ══════════════════════════════════════ */
+const CLIENTES_DEMO = [
+  {n:'Carlos Rodríguez',t:'1134567890'},{n:'Martín García',t:'1145678901'},
+  {n:'Lucas Fernández',t:'1156789012'},{n:'Diego Martínez',t:'1167890123'},
+  {n:'Sebastián López',t:'1178901234'},{n:'Gonzalo Pérez',t:'1189012345'},
+  {n:'Matías Torres',t:'1190123456'},{n:'Andrés Sánchez',t:'1101234567'},
+  {n:'Pablo Romero',t:'1112345678'},{n:'Federico Díaz',t:'1123456789'},
+  {n:'Nicolás Ruiz',t:'1134561234'},{n:'Emiliano Castro',t:'1145672345'},
+  {n:'Facundo Morales',t:'1156783456'},{n:'Ramiro Álvarez',t:'1167894567'},
+  {n:'Tomás Herrera',t:'1178905678'},{n:'Bruno Acosta',t:'1134509876'},
+  {n:'Leandro Vega',t:'1145610987'},{n:'Maximiliano Cruz',t:'1156721098'},
+]
+
+function generarDemo() {
+  const res = []
+  const hoy = new Date()
+  let id = 1
+  const pDia  = [0.45,0.55,0.65,0.75,0.7,0.95,0.88] // lun→dom
+  const pHora = {}
+  HORARIOS.forEach(h=>{const hr=parseInt(h);pHora[h]=hr<10?.20:hr<12?.38:hr<14?.42:hr<16?.50:hr<18?.68:hr<20?.88:hr<22?.80:.60})
+  const montos = [7000,7500,8000,8500,9000,10000]
+
+  for (let da = 90; da >= 0; da--) {
+    const f = new Date(hoy); f.setDate(f.getDate() - da)
+    const fStr = f.toISOString().split('T')[0]
+    const dow = f.getDay()
+    horariosDelDia(dow).forEach(hora => {
+      CANCHAS.forEach(cancha => {
+        if (Math.random() < pDia[dow] * (pHora[hora]??0.40)) {
+          const cli = CLIENTES_DEMO[Math.floor(Math.random() * CLIENTES_DEMO.length)]
+          const cancelada = Math.random() < .07
+          res.push({
+            id: id++, cancha, fecha: fStr, hora,
+            cliente: cli.n, telefono: cli.t,
+            monto: cancelada ? 0 : montos[Math.floor(Math.random()*montos.length)],
+            estado: cancelada ? 'cancelada' : (Math.random() < .08 ? 'pendiente' : 'confirmada'),
+            created_at: new Date(f.getTime() - Math.random()*7*86400000).toISOString()
+          })
+        }
+      })
+    })
+  }
+  return res
+}
+
+/* ══════════════════════════════════════
+   ESTADO GLOBAL
+   ══════════════════════════════════════ */
+let RESERVAS = []
+let isDemoMode = false
+let FIXED_SCHEDULES = []
+let grillaDia = null  // null = hoy, se setea al navegar
+let _finDetalleAbierto = null
+let _finDatos = {}
+const charts = {}
+
+/* ══════════════════════════════════════
+   AUTH
+   ══════════════════════════════════════ */
+function doLogin() {
+  const email = document.getElementById('l-email').value
+  const pass  = document.getElementById('l-pass').value
+  if (!email || !pass) { showErr('Ingresá email y contraseña'); return }
+
+  if (SUPABASE_URL.includes('TU_PROYECTO')) {
+    // Supabase no configurado → modo demo automático
+    isDemoMode = true
+    enterApp()
+  } else {
+    sbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY)
+    sbClient.auth.signInWithPassword({ email, password: pass })
+      .then(({data, error}) => {
+        if (error) { showErr(error.message); return }
+        isDemoMode = false
+        enterApp()
+      })
+  }
+}
+
+function enterDemo() { isDemoMode = true; enterApp() }
+
+function showErr(msg) {
+  const el = document.getElementById('login-error')
+  el.textContent = msg; el.style.display = 'block'
+}
+
+function enterApp() {
+  document.getElementById('login-screen').style.display = 'none'
+  document.getElementById('app').classList.add('visible')
+  if (isDemoMode) document.getElementById('demo-badge').style.display = 'block'
+  const hoy = new Date()
+  document.getElementById('tb-date').textContent =
+    `${DIAS_ES[hoy.getDay()]}, ${hoy.getDate()} de ${MESES[hoy.getMonth()]} de ${hoy.getFullYear()}`
+  Promise.all([cargarReservas(), cargarFijos(), cargarMenu()]).then(() => { initGrillaDia(); navigate('hoy') })
+}
+
+async function cargarReservas() {
+  if (isDemoMode) {
+    RESERVAS = generarDemo()
+    return
+  }
+  const { data, error } = await sbClient.from('reservas').select('*').order('fecha', { ascending: false })
+  if (error) { console.error('Error cargando reservas:', error); RESERVAS = []; return }
+  RESERVAS = data.map(r => ({ ...r, monto: r.monto || 0, fecha: (r.fecha||'').split('T')[0] }))
+}
+
+function _fijoFromDB(f) {
+  return {
+    id: f.id, cancha: f.cancha, dia: f.dia,
+    horaInicio: f.hora_inicio, duracion: parseFloat(f.duracion),
+    etiqueta: f.etiqueta, tipo: f.tipo || 'clase',
+    telefono: f.telefono || '', precio_hora: parseFloat(f.precio_hora) || 0,
+    fechaInicio: f.fecha_inicio || null, fechaFin: f.fecha_fin || null,
+  }
+}
+
+function _fijaToDB(f) {
+  return {
+    id: f.id, cancha: f.cancha, dia: parseInt(f.dia),
+    hora_inicio: f.horaInicio, duracion: f.duracion,
+    etiqueta: f.etiqueta, tipo: f.tipo || 'clase',
+    telefono: f.telefono || null, precio_hora: f.precio_hora || 0,
+    fecha_inicio: f.fechaInicio || null, fecha_fin: f.fechaFin || null,
+  }
+}
+
+async function cargarFijos() {
+  if (isDemoMode) {
+    // cargar desde localStorage (modo demo)
+    const raw = JSON.parse(localStorage.getItem('bp_fixed_schedules') || '[]')
+    const todayStr = new Date().toISOString().split('T')[0]
+    FIXED_SCHEDULES = raw.map(f => {
+      let upd = { ...f }
+      if (!upd.precio_hora && upd.monto && upd.duracion)
+        upd = { ...upd, precio_hora: Math.round(upd.monto / upd.duracion), monto: 0 }
+      if (!upd.fechaInicio) upd = { ...upd, fechaInicio: todayStr }
+      return upd
+    })
+    return
+  }
+  const { data, error } = await sbClient.from('horarios_fijos').select('*')
+  if (error) { console.error('Error cargando fijos:', error); return }
+  FIXED_SCHEDULES = (data || []).map(_fijoFromDB)
+}
+
+function doLogout() {
+  document.getElementById('app').classList.remove('visible')
+  document.getElementById('login-screen').style.display = 'flex'
+  RESERVAS = []
+}
+
+/* ══════════════════════════════════════
+   ROUTER
+   ══════════════════════════════════════ */
+const TITULOS = {
+  hoy:'Hoy', reservas:'Reservas', financiero:'Dashboard Financiero',
+  ocupacion:'Análisis de Ocupación', clientes:'Clientes',
+  recomendaciones:'Recomendaciones Inteligentes', resumen:'Resumen Semanal',
+  'horarios-fijos':'Horarios Fijos', menu:'Menú del Kiosco'
+}
+const RENDERS = {
+  hoy: renderHoy, reservas: renderReservas, financiero: renderFinanciero,
+  ocupacion: renderOcupacion, clientes: renderClientes,
+  recomendaciones: renderRecomendaciones, resumen: renderResumen,
+  'horarios-fijos': renderHorariosFijos,
+  menu: renderMenuAdmin
+}
+
+function navigate(s) {
+  document.querySelectorAll('.section').forEach(x => x.classList.remove('active'))
+  document.querySelectorAll('.nav-item').forEach(x => x.classList.remove('active'))
+  document.getElementById('section-'+s).classList.add('active')
+  document.querySelector(`[data-s="${s}"]`).classList.add('active')
+  document.getElementById('tb-title').textContent = TITULOS[s]
+  // Subtítulo: siempre muestra la fecha real de hoy al cambiar de sección
+  const h = new Date()
+  document.getElementById('tb-date').textContent =
+    `${DIAS_ES[h.getDay()]}, ${h.getDate()} de ${MESES[h.getMonth()]} de ${h.getFullYear()}`
+  if (RENDERS[s]) RENDERS[s]()
+  setTimeout(() => staggerCards('section-'+s), 30)
+}
+
+/* ══════════════════════════════════════
+   HELPERS
+   ══════════════════════════════════════ */
+const $ = p => formatPeso(p)
+function formatPeso(n) { return '$'+Math.round(n).toLocaleString('es-AR') }
+function hoyStr() { return new Date().toISOString().split('T')[0] }
+// Jornada comercial: antes de las 08:00 la jornada activa es la del día anterior
+function businessDateStr() {
+  const now = new Date()
+  if (now.getHours() < 8) {
+    const ayer = new Date(now); ayer.setDate(ayer.getDate() - 1)
+    return ayer.toISOString().split('T')[0]
+  }
+  return now.toISOString().split('T')[0]
+}
+function conf(arr) { return (arr||RESERVAS).filter(r=>r.estado==='confirmada') }
+
+function toMins(h) { const [hh,mm]=h.split(':').map(Number); return hh*60+mm }
+
+// Expande FIXED_SCHEDULES en objetos reserva-like para un rango de fechas
+function fixedOccurrencesRange(desde, hasta) {
+  if (!FIXED_SCHEDULES.length) return []
+  const result = []
+  const d = new Date(desde+'T12:00:00')
+  const end = new Date(hasta+'T12:00:00')
+  while (d <= end) {
+    const fecha = d.toISOString().split('T')[0]
+    const diaSemana = d.getDay()
+    FIXED_SCHEDULES.forEach(f => {
+      if (parseInt(f.dia) !== diaSemana) return
+        if (f.fechaInicio && fecha < f.fechaInicio) return  // antes del inicio
+      if (f.fechaFin && fecha > f.fechaFin) return       // después del fin (eliminado)
+      result.push({
+        id: `fijo_${f.id}_${fecha}`, fecha,
+        cancha: f.cancha, hora: f.horaInicio, duracion: f.duracion,
+        monto: (f.precio_hora || f.monto || 0) * f.duracion,
+        cliente: f.etiqueta, telefono: f.telefono || '',
+        estado: 'confirmada', tipo: 'fijo', tipoFijo: f.tipo || 'clase'
+      })
+    })
+    d.setDate(d.getDate() + 1)
+  }
+  return result
+}
+
+function slotOcupado(fecha, cancha, hora) {
+  const sT = toMinsDay(hora)
+  // reservas reales
+  const r = RESERVAS.find(r => {
+    if (r.fecha!==fecha||r.cancha!==cancha||r.estado==='cancelada') return false
+    const rS=toMinsDay(r.hora), rE=rS+(r.duracion||1)*60
+    return sT>=rS && sT<rE
+  })
+  if (r) return {tipo:'reserva', item:r, isStart:r.hora===hora}
+  // horarios fijos
+  const d = new Date(fecha+'T12:00:00').getDay()
+  const f = FIXED_SCHEDULES.find(f => {
+    if (f.cancha!==cancha||parseInt(f.dia)!==d) return false
+    if (f.fechaInicio && fecha < f.fechaInicio) return false
+    if (f.fechaFin    && fecha > f.fechaFin)    return false
+    const fS=toMinsDay(f.horaInicio), fE=fS+f.duracion*60
+    return sT>=fS && sT<fE
+  })
+  if (f) return {tipo:'fijo', item:f, isStart:f.horaInicio===hora}
+  return null
+}
+
+function populateHoraSelect(selId, filterPast) {
+  const sel = document.getElementById(selId)
+  const cur = sel.value
+  const fecha = document.getElementById('m-fecha')?.value
+  const biz = businessDateStr()
+
+  // Si la fecha es anterior a la jornada activa, no hay slots disponibles
+  if (filterPast && fecha && fecha < biz) {
+    sel.innerHTML = '<option value="">— fecha pasada —</option>'
+    return
+  }
+
+  const diaNum = fecha ? new Date(fecha+'T12:00:00').getDay() : new Date().getDay()
+  let opciones = horariosDelDia(diaNum)
+
+  if (filterPast && fecha === biz) {
+    const now = new Date()
+    const nowExt = toMinsDay(String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0'))
+    opciones = opciones.filter(h => toMinsDay(h) > nowExt)
+  }
+
+  sel.innerHTML = opciones.map(h=>`<option value="${h}">${h}</option>`).join('')
+  if (cur && opciones.includes(cur)) sel.value = cur
+}
+
+function populateMfInicio() {
+  const diasSel = [...document.querySelectorAll('#mf-dias input:checked')].map(c=>parseInt(c.value))
+  const sets = diasSel.length > 0 ? diasSel.map(d=>new Set(horariosDelDia(d))) : [new Set(HORARIOS)]
+  const opciones = [...sets[0]].filter(h=>sets.every(s=>s.has(h)))
+  const sel = document.getElementById('mf-inicio')
+  const cur = sel.value
+  sel.innerHTML = opciones.map(h=>`<option value="${h}">${h}</option>`).join('')
+  if (cur && opciones.includes(cur)) sel.value = cur
+}
+
+function semanaFechas() {
+  const h = new Date(), L = new Date(h)
+  L.setDate(h.getDate() - ((h.getDay()+6)%7))
+  return Array.from({length:7},(_,i) => { const d=new Date(L); d.setDate(L.getDate()+i); return d.toISOString().split('T')[0] })
+}
+
+function destroyChart(id) {
+  if (charts[id]) { charts[id].destroy(); delete charts[id] }
+  const el = document.getElementById(id)
+  if (el) el.parentNode.innerHTML = `<canvas id="${id}"></canvas>`
+}
+
+const cOpts = {
+  responsive:true, maintainAspectRatio:false,
+  plugins:{ legend:{ labels:{ color:'rgba(255,255,255,.55)', font:{family:"'Plus Jakarta Sans'",size:11} } } },
+  scales:{
+    x:{ ticks:{color:'rgba(255,255,255,.4)',font:{family:"'Plus Jakarta Sans'",size:10}}, grid:{color:'rgba(255,255,255,.04)'} },
+    y:{ ticks:{color:'rgba(255,255,255,.4)',font:{family:"'Plus Jakarta Sans'",size:10}}, grid:{color:'rgba(255,255,255,.04)'} }
+  }
+}
+
+function kpi(tit, val, sub, color, dir) {
+  return `<div class="card">
+    <div class="accent" style="background:${color}"></div>
+    <div class="card-t">${tit}</div>
+    <div class="kpi-v">${val}</div>
+    ${sub ? `<div class="kpi-sub ${dir||''}">${sub}</div>` : ''}
+  </div>`
+}
+
+// ── Ripple effect ──
+document.addEventListener('click', e => {
+  const btn = e.target.closest('.btn,.btn-primary,.btn-orange,.btn-outline,.btn-danger,.btn-demo,.btn-logout,.nav-item,.fin-kpi-btn')
+  if (!btn) return
+  const r = document.createElement('span')
+  const rect = btn.getBoundingClientRect()
+  const size = Math.max(rect.width, rect.height)
+  r.style.cssText = `position:absolute;border-radius:50%;background:rgba(255,255,255,.18);width:${size}px;height:${size}px;left:${e.clientX-rect.left-size/2}px;top:${e.clientY-rect.top-size/2}px;transform:scale(0);animation:ripple .55s linear;pointer-events:none;z-index:10`
+  btn.appendChild(r)
+  r.addEventListener('animationend', () => r.remove())
+})
+
+// ── Count-up para KPI numéricos ──
+function countUp(el, target, isMoneda) {
+  const dur = 650, start = performance.now()
+  const fmt = v => isMoneda
+    ? '$' + Math.round(v).toLocaleString('es-AR')
+    : Math.round(v).toLocaleString('es-AR')
+  const tick = now => {
+    const p = Math.min((now - start) / dur, 1)
+    const ease = 1 - Math.pow(1 - p, 3)
+    el.textContent = fmt(target * ease)
+    if (p < 1) requestAnimationFrame(tick)
+    else el.textContent = fmt(target)
+  }
+  requestAnimationFrame(tick)
+}
+
+function runCountUps() {
+  document.querySelectorAll('[data-count]').forEach(el => {
+    const v = parseFloat(el.dataset.count)
+    if (!isNaN(v)) countUp(el, v, el.dataset.moneda === '1')
+  })
+}
+
+// ── Stagger fade-in de cards al entrar a una sección ──
+function staggerCards(sectionId) {
+  const sec = document.getElementById(sectionId)
+  if (!sec) return
+  const items = sec.querySelectorAll('.card,.chart-card,.rec-card,.res-header')
+  items.forEach((el, i) => {
+    el.style.animationDelay = `${i * 50}ms`
+    el.classList.remove('anim-stagger')
+    void el.offsetWidth
+    el.classList.add('anim-stagger')
+    setTimeout(() => { el.classList.remove('anim-stagger'); el.style.animationDelay = '' }, 800 + i * 50)
+  })
+}
+
+function formatF(s) { const [y,m,d]=s.split('-'); return `${d}/${m}/${y}` }
+
+function toggleFinDetalle(tipo) {
+  const el = document.getElementById('fin-detalle')
+  if (_finDetalleAbierto === tipo) {
+    el.style.display = 'none'; _finDetalleAbierto = null
+    document.querySelectorAll('.fin-kpi-btn').forEach(b=>b.classList.remove('active'))
+    return
+  }
+  _finDetalleAbierto = tipo
+  document.querySelectorAll('.fin-kpi-btn').forEach(b=>b.classList.remove('active'))
+  document.querySelector(`.fin-kpi-btn[data-tipo="${tipo}"]`)?.classList.add('active')
+  const rows = _finDatos[tipo] || []
+  const total = rows.reduce((s,r)=>s+r.tot,0)
+  el.innerHTML = `
+    <div class="card" style="padding:16px 20px">
+      <div style="display:flex;flex-wrap:wrap;gap:8px">
+        ${rows.map(r=>`
+          <div style="flex:1;min-width:120px;background:var(--azul-dark);border:1px solid var(--borde-2);border-radius:10px;padding:10px 14px;${r.isHoy?'border-color:var(--naranja)':''}">
+            <div style="font-size:11px;color:var(--texto-dim);font-weight:700;margin-bottom:4px;white-space:nowrap">${r.lbl}${r.isHoy?' <span style="color:var(--naranja)">·hoy</span>':''}</div>
+            <div style="font-size:15px;font-weight:800;color:${r.tot>0?'var(--blanco)':'var(--texto-dim)'}">${r.tot>0?$(r.tot):'—'}</div>
+            ${total>0&&r.tot>0?`<div style="font-size:10px;color:var(--texto-dim);margin-top:2px">${Math.round(r.tot/total*100)}% del total</div>`:''}
+          </div>`).join('')}
+      </div>
+    </div>`
+  el.style.display = 'block'
+}
+
+/* ══════════════════════════════════════
+   HOY
+   ══════════════════════════════════════ */
+function renderHoy() {
+  const hoy = grillaDia || businessDateStr()
+  const esHoy = hoy === businessDateStr()
+  const rHoy = RESERVAS.filter(r=>r.fecha===hoy)
+  const cHoy = rHoy.filter(r=>r.estado==='confirmada')
+
+  // Slots ocupados por fijos en este día
+  const diaNum = new Date(hoy+'T12:00:00').getDay()
+  const fijosHoy = FIXED_SCHEDULES.filter(f =>
+    parseInt(f.dia)===diaNum &&
+    (!f.fechaInicio || hoy >= f.fechaInicio) &&
+    (!f.fechaFin    || hoy <= f.fechaFin)
+  )
+  const horasHoy = horariosDelDia(diaNum)
+  let slotsOcupadosFijos = 0
+  CANCHAS.forEach(cancha => {
+    horasHoy.forEach(hora => {
+      const sT = toMinsDay(hora)
+      const bloqueado = fijosHoy.some(f => {
+        if(f.cancha!==cancha) return false
+        const fS=toMinsDay(f.horaInicio), fE=fS+f.duracion*60
+        return sT>=fS && sT<fE
+      })
+      if(bloqueado) slotsOcupadosFijos++
+    })
+  })
+
+  const total = CANCHAS.length * horasHoy.length
+  const slotsLibres = total - cHoy.length - slotsOcupadosFijos
+  const labelDia = esHoy ? 'hoy' : formatF(hoy)
+
+  const montoFijosHoy = fijosHoy.reduce((s,f)=>s+((f.precio_hora||f.monto||0)*f.duracion),0)
+  document.getElementById('hoy-kpis').innerHTML =
+    kpi('Reservas confirmadas', cHoy.length, labelDia, '#E8761A') +
+    kpi('Slots disponibles', Math.max(0, slotsLibres), labelDia, '#22c55e') +
+    kpi('Recaudado', $(cHoy.reduce((s,r)=>s+r.monto,0) + montoFijosHoy), labelDia, '#2563B0') +
+    kpi('Cancelaciones', rHoy.filter(r=>r.estado==='cancelada').length, labelDia, '#ef4444')
+
+  // Grilla — canchas=filas, horarios=columnas
+  const now = new Date()
+  const nowMExt = esHoy ? toMinsDay(String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0')) : -1
+  const nCols = horasHoy.length
+  const minGrillaW = 68 + nCols * 42
+  let g = `<div class="grilla" style="grid-template-columns:68px repeat(${nCols},52px);width:max-content">`
+  g += '<div class="grilla-h"></div>'
+  horasHoy.forEach(h => g += `<div class="grilla-h">${h}</div>`)
+  CANCHAS.forEach(cancha => {
+    g += `<div class="grilla-t">${cancha}</div>`
+    horasHoy.forEach(hora => {
+      const pasado = toMinsDay(hora) < nowMExt
+      const sT = toMinsDay(hora)
+      const diaNum2 = new Date(hoy+'T12:00:00').getDay()
+      // check ambos para detectar conflictos
+      const res = RESERVAS.find(r => {
+        if(r.fecha!==hoy||r.cancha!==cancha||r.estado==='cancelada') return false
+        const rS=toMinsDay(r.hora),rE=rS+(r.duracion||1)*60; return sT>=rS&&sT<rE
+      })
+      const fij = FIXED_SCHEDULES.find(f => {
+        if(f.cancha!==cancha||parseInt(f.dia)!==diaNum2) return false
+        if(f.fechaInicio&&hoy<f.fechaInicio) return false
+        if(f.fechaFin&&hoy>f.fechaFin) return false
+        const fS=toMinsDay(f.horaInicio),fE=fS+f.duracion*60; return sT>=fS&&sT<fE
+      })
+      if (!res && !fij) {
+        g += pasado ? `<div class="slot pasado-libre">—</div>` : `<div class="slot libre">✓</div>`
+      } else if (res) {
+        const nm = res.cliente.split(' ')[0]
+        g += pasado
+          ? `<div class="slot pasado-ocup" title="${res.cliente}">${nm}</div>`
+          : `<div class="slot ${res.hora===hora?'ocupado':'ocupado-cont'}" title="${res.cliente} · ${res.duracion||1}h" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:0 3px">${nm}</div>`
+      } else {
+        const nm = fij.etiqueta
+        const isStart = fij.horaInicio===hora
+        g += pasado
+          ? `<div class="slot pasado-ocup" title="${nm}">${nm}</div>`
+          : `<div class="slot ${isStart?'fijo':'fijo-cont'}" title="${nm}" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:0 3px">${nm}</div>`
+      }
+    })
+  })
+  g += '</div>'
+  document.getElementById('grilla-hoy').innerHTML = g
+
+  // Leyenda de horarios fijos activos ese día
+  const etiquetasUnicas = [...new Map(fijosHoy.map(f=>[f.etiqueta, f])).values()]
+  document.getElementById('grilla-leyenda').innerHTML = etiquetasUnicas.length === 0 ? '' :
+    `<div style="display:flex;flex-wrap:wrap;gap:8px;padding-top:8px;border-top:1px solid var(--borde)">
+      <span style="font-size:11px;font-weight:700;color:var(--texto-dim);text-transform:uppercase;letter-spacing:.06em;align-self:center">Fijos:</span>
+      ${etiquetasUnicas.map(f=>`
+        <span style="display:inline-flex;align-items:center;gap:5px;background:rgba(139,92,246,.15);border:1px solid rgba(139,92,246,.3);border-radius:20px;padding:3px 10px;font-size:12px;font-weight:600;color:#a78bfa">
+          <span style="width:8px;height:8px;border-radius:50%;background:#a78bfa;flex-shrink:0"></span>
+          ${f.etiqueta} — ${f.cancha} · ${f.horaInicio} (${f.duracion}h)
+        </span>`).join('')}
+    </div>`
+
+  // Próximas / todas las del día
+  document.getElementById('upcoming-title').textContent = esHoy ? 'Próximas reservas hoy' : `Reservas del ${formatF(hoy)}`
+  const nowStr = esHoy ? `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}` : '00:00'
+  const prox = cHoy.filter(r=>r.hora>=nowStr).sort((a,b)=>a.hora.localeCompare(b.hora)).slice(0,10)
+  document.getElementById('upcoming').innerHTML = prox.length === 0
+    ? `<p style="color:var(--texto-dim);font-size:13px;padding:16px 0">${esHoy?'No hay más reservas para hoy.':'Sin reservas confirmadas para este día.'}</p>`
+    : prox.map(r=>`
+      <div class="upc-item">
+        <div class="upc-hora">${r.hora}</div>
+        <div><div style="font-size:14px;font-weight:600">${r.cliente}</div><div style="font-size:12px;color:var(--texto-dim)">${r.cancha}</div></div>
+        <div style="margin-left:auto;font-size:13px;font-weight:600">${$(r.monto)}</div>
+      </div>`).join('')
+}
+
+/* ══════════════════════════════════════
+   FINANCIERO
+   ══════════════════════════════════════ */
+function populateFinMes() {
+  const sel = document.getElementById('fin-mes-sel')
+  if (!sel) return
+  // Construir opciones: mes actual + 11 anteriores + cualquier mes con datos
+  const hoy = new Date()
+  const meses = new Set()
+  // últimos 24 meses
+  for(let i=0;i<24;i++){
+    const d=new Date(hoy.getFullYear(),hoy.getMonth()-i,1)
+    meses.add(`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`)
+  }
+  // meses con datos
+  conf().forEach(r=>meses.add(r.fecha.slice(0,7)))
+  const cur = `${hoy.getFullYear()}-${String(hoy.getMonth()+1).padStart(2,'0')}`
+  const opts = [...meses].sort((a,b)=>b.localeCompare(a))
+  const curVal = sel.value || cur
+  sel.innerHTML = opts.map(ym=>{
+    const [y,m]=ym.split('-')
+    const nom=`${MESES[parseInt(m)-1]} ${y}`
+    return `<option value="${ym}"${ym===curVal?' selected':''}>${ym===cur?'Este mes — '+nom:nom}</option>`
+  }).join('')
+  if(!sel.value) sel.value = cur
+}
+
+function renderFinanciero() {
+  populateFinMes()
+  const sel = document.getElementById('fin-mes-sel')
+  const selYM = sel ? sel.value : null
+  const hoy = new Date()
+  const curYM = `${hoy.getFullYear()}-${String(hoy.getMonth()+1).padStart(2,'0')}`
+  const esMesActual = !selYM || selYM === curYM
+
+  // Fechas del mes seleccionado
+  const [selY, selM] = (selYM||curYM).split('-').map(Number)
+  const iMes = `${selY}-${String(selM).padStart(2,'0')}-01`
+  const fMes = new Date(selY,selM,0).toISOString().split('T')[0]
+  const iMAnt = new Date(selY,selM-2,1).toISOString().split('T')[0]
+  const fMAnt = new Date(selY,selM-1,0).toISOString().split('T')[0]
+  const iAnio = `${selY}-01-01`
+  const diasMes = new Date(selY,selM,0).getDate()
+  const diasTranscurridos = esMesActual ? hoy.getDate() : diasMes
+
+  const c = conf()
+  const fijMes  = fixedOccurrencesRange(iMes, fMes)
+  const fijMAnt = fixedOccurrencesRange(iMAnt, fMAnt)
+  const fijAnio = fixedOccurrencesRange(iAnio, fMes)
+  const cMes  = [...c.filter(r=>r.fecha>=iMes&&r.fecha<=fMes),  ...fijMes]
+  const cMAnt = [...c.filter(r=>r.fecha>=iMAnt&&r.fecha<=fMAnt), ...fijMAnt]
+  // Anual = suma de cada mes (real + fijos de ese mes), igual que el mensual pero acumulado
+  let rAnio = 0
+  for (let m = 1; m <= selM; m++) {
+    const im = `${selY}-${String(m).padStart(2,'0')}-01`
+    const fm = new Date(selY,m,0).toISOString().split('T')[0]
+    const fijM = fixedOccurrencesRange(im, fm)
+    rAnio += [...c.filter(r=>r.fecha>=im&&r.fecha<=fm), ...fijM].reduce((s,r)=>s+r.monto,0)
+  }
+
+  const iSem = new Date(hoy); iSem.setDate(hoy.getDate()-((hoy.getDay()+6)%7))
+  const iSemStr = iSem.toISOString().split('T')[0]
+  const cSem = esMesActual ? [...c.filter(r=>r.fecha>=iSemStr), ...fixedOccurrencesRange(iSemStr, hoy.toISOString().split('T')[0])] : []
+
+  const rMes  = cMes.reduce((s,r)=>s+r.monto,0)
+  const rMAnt = cMAnt.reduce((s,r)=>s+r.monto,0)
+  const rSem  = cSem.reduce((s,r)=>s+r.monto,0)
+  const cmb   = rMAnt>0 ? Math.round((rMes-rMAnt)/rMAnt*100) : 0
+  const promDiario = diasTranscurridos>0 ? Math.round(rMes/diasTranscurridos) : 0
+  const proy = esMesActual && diasTranscurridos>0 ? Math.round(rMes/diasTranscurridos*diasMes) : rMes
+  const mesNom = MESES[selM-1]+' '+selY
+  const hoyS = hoy.toISOString().split('T')[0]
+
+  // ── Breakdowns para los detalles expandibles ──
+  // Semana: día a día (Lun→Dom)
+  const _semRows = []
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(iSem); d.setDate(iSem.getDate()+i)
+    const ds = d.toISOString().split('T')[0]
+    const tot = [...c.filter(r=>r.fecha===ds), ...fixedOccurrencesRange(ds,ds)].reduce((s,r)=>s+r.monto,0)
+    _semRows.push({lbl:['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'][i]+' '+d.getDate()+'/'+(d.getMonth()+1), tot, isHoy:ds===hoyS})
+  }
+  // Mes: semana a semana
+  const _mesRows = []
+  for (let sem = 0; sem < 5; sem++) {
+    const dIni = sem*7+1, dFin = Math.min((sem+1)*7, diasMes)
+    if (dIni > diasMes) break
+    const si=`${selY}-${String(selM).padStart(2,'0')}-${String(dIni).padStart(2,'0')}`
+    const sf=`${selY}-${String(selM).padStart(2,'0')}-${String(dFin).padStart(2,'0')}`
+    const tot = cMes.filter(r=>r.fecha>=si&&r.fecha<=sf).reduce((s,r)=>s+r.monto,0)
+    _mesRows.push({lbl:`Sem ${sem+1}  (${dIni}–${dFin}/${selM})`, tot})
+  }
+  // Año: mes a mes
+  const _anioRows = []
+  for (let m = 1; m <= selM; m++) {
+    const im=`${selY}-${String(m).padStart(2,'0')}-01`
+    const fm=new Date(selY,m,0).toISOString().split('T')[0]
+    const fijM=fixedOccurrencesRange(im,fm)
+    const tot=[...c.filter(r=>r.fecha>=im&&r.fecha<=fm),...fijM].reduce((s,r)=>s+r.monto,0)
+    _anioRows.push({lbl:MESES[m-1].charAt(0).toUpperCase()+MESES[m-1].slice(1), tot, isHoy:m===selM&&esMesActual})
+  }
+  _finDatos = {semana:_semRows, mes:_mesRows, anio:_anioRows}
+  // Re-render detalle si estaba abierto
+  if (_finDetalleAbierto) { const t=_finDetalleAbierto; _finDetalleAbierto=null; toggleFinDetalle(t) }
+
+  const btnStyle = `background:none;border:1px solid rgba(255,255,255,.15);border-radius:6px;color:var(--texto-dim);font-size:10px;font-weight:700;padding:3px 8px;cursor:pointer;margin-top:8px;font-family:inherit;transition:.15s`
+  const kpiBtn = (tit,val,sub,color,dir,tipo,btnLbl) => `
+    <div class="card" style="position:relative">
+      <div class="accent" style="background:${color}"></div>
+      <div class="card-t">${tit}</div>
+      <div style="font-size:28px;font-weight:800;line-height:1.1;margin-bottom:5px">${val}</div>
+      ${sub?`<div class="kpi-sub ${dir||''}">${sub}</div>`:''}
+      <button class="fin-kpi-btn" data-tipo="${tipo}" onclick="toggleFinDetalle('${tipo}')" style="${btnStyle}">▾ ${btnLbl}</button>
+    </div>`
+
+  document.getElementById('fin-kpis').innerHTML =
+    (esMesActual
+      ? kpiBtn('Esta semana',$(rSem),'','#E8761A','','semana','Día a día')
+      : kpi('Reservas',cMes.length,mesNom,'#E8761A')) +
+    kpiBtn(esMesActual?'Este mes':mesNom, $(rMes), (cmb>=0?`↑ ${cmb}%`:`↓ ${Math.abs(cmb)}%`)+' vs mes ant.','#2563B0',cmb>=0?'up':'dn','mes','Semana a semana') +
+    kpiBtn(esMesActual?'Este año':('Año '+selY), $(rAnio),'','#22c55e','','anio','Mes a mes') +
+    kpi('Promedio diario',$(promDiario),mesNom,'#a855f7')
+
+  // Chart 1: días del mes seleccionado
+  destroyChart('c-ing14')
+  const l14=[],d14=[]
+  for(let d=1;d<=diasMes;d++){
+    const s=`${selY}-${String(selM).padStart(2,'0')}-${String(d).padStart(2,'0')}`
+    l14.push(d+'/'+(selM))
+    d14.push(cMes.filter(r=>r.fecha===s).reduce((a,r)=>a+r.monto,0))
+  }
+  // Actualizar título del gráfico
+  const t1 = document.querySelector('#c-ing14')?.closest('.chart-card')?.querySelector('.chart-t')
+  if(t1) t1.textContent = esMesActual ? 'Ingresos últimos 14 días' : `Ingresos por día — ${mesNom}`
+  charts['c-ing14']=new Chart(document.getElementById('c-ing14').getContext('2d'),{
+    type:'bar', data:{labels:l14,datasets:[{data:d14,backgroundColor:'rgba(232,118,26,.7)',borderColor:'#E8761A',borderWidth:1,borderRadius:4}]},
+    options:{...cOpts,plugins:{legend:{display:false}}}
+  })
+
+  // Chart 2: mes actual vs mes anterior — barras agrupadas por semana
+  destroyChart('c-mvm')
+  const semanas = ['Sem 1','Sem 2','Sem 3','Sem 4','Sem 5']
+  const dMSem = [0,0,0,0,0], dMASem = [0,0,0,0,0]
+  for(let d=1;d<=diasMes;d++){
+    const sem = Math.min(4, Math.floor((d-1)/7))
+    const s=`${selY}-${String(selM).padStart(2,'0')}-${String(d).padStart(2,'0')}`
+    const mA=selM===1?12:selM-1; const yA=selM===1?selY-1:selY
+    const sA=`${yA}-${String(mA).padStart(2,'0')}-${String(d).padStart(2,'0')}`
+    dMSem[sem]  += cMes.filter(r=>r.fecha===s).reduce((a,r)=>a+r.monto,0)
+    dMASem[sem] += cMAnt.filter(r=>r.fecha===sA).reduce((a,r)=>a+r.monto,0)
+  }
+  charts['c-mvm']=new Chart(document.getElementById('c-mvm').getContext('2d'),{
+    type:'bar',
+    data:{labels:semanas,datasets:[
+      {label:mesNom,    data:dMSem,  backgroundColor:'rgba(232,118,26,.8)', borderRadius:5, borderSkipped:false},
+      {label:'Mes ant.',data:dMASem, backgroundColor:'rgba(255,255,255,.15)', borderRadius:5, borderSkipped:false}
+    ]},
+    options:{...cOpts, plugins:{legend:{labels:{color:'rgba(255,255,255,.55)',font:{family:"'Plus Jakarta Sans'",size:11}}}}}
+  })
+
+  // Chart 3: por cancha
+  destroyChart('c-cancha')
+  const dCancha=CANCHAS.map(ca=>cMes.filter(r=>r.cancha===ca).reduce((a,r)=>a+r.monto,0))
+  charts['c-cancha']=new Chart(document.getElementById('c-cancha').getContext('2d'),{
+    type:'doughnut',
+    data:{labels:CANCHAS,datasets:[{data:dCancha,backgroundColor:['#E8761A','#2563B0','#22c55e','#a855f7'],borderWidth:0}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{color:'rgba(255,255,255,.55)',font:{family:"'Plus Jakarta Sans'"},padding:12,boxWidth:12}}}}
+  })
+
+  // Breakdown por tipo (reservas normales / fijo cliente / clases)
+  const rNormal      = c.filter(r=>r.fecha>=iMes&&r.fecha<=fMes).reduce((s,r)=>s+r.monto,0)
+  const rFijoCliente = fijMes.filter(r=>r.tipoFijo==='cliente').reduce((s,r)=>s+r.monto,0)
+  const rClase       = fijMes.filter(r=>r.tipoFijo==='clase').reduce((s,r)=>s+r.monto,0)
+  const totalTipos   = rNormal + rFijoCliente + rClase || 1
+  const pNormal = Math.round(rNormal/totalTipos*100)
+  const pFijo   = Math.round(rFijoCliente/totalTipos*100)
+  const pClase  = Math.round(rClase/totalTipos*100)
+  const tiposData = [
+    {label:'Reservas normales', monto:rNormal, pct:pNormal, color:'#E8761A', desc:'Turnos confirmados uno a uno'},
+    {label:'Turnos fijos (cliente)',   monto:rFijoCliente, pct:pFijo,   color:'#a855f7', desc:'Clientes con horario fijo'},
+    {label:'Clases / Bloques',  monto:rClase,       pct:pClase,  color:'#2563B0', desc:'Horarios bloqueados para clases'},
+  ]
+  document.getElementById('fin-tipos').innerHTML = `
+    <div class="chart-t" style="margin-bottom:16px">Composición de ingresos — ${mesNom}</div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px">
+      ${tiposData.map(t=>`
+        <div style="background:var(--azul-dark);border:1px solid var(--borde-2);border-radius:10px;padding:16px">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+            <div style="width:10px;height:10px;border-radius:50%;background:${t.color};flex-shrink:0"></div>
+            <div style="font-size:12px;font-weight:700;color:var(--texto-dim);text-transform:uppercase;letter-spacing:.05em">${t.label}</div>
+          </div>
+          <div style="font-size:24px;font-weight:800;color:var(--blanco);margin-bottom:4px">${$(t.monto)}</div>
+          <div style="font-size:12px;color:var(--texto-dim);margin-bottom:10px">${t.desc}</div>
+          <div style="background:rgba(255,255,255,.08);border-radius:4px;height:6px;overflow:hidden">
+            <div style="height:100%;width:${t.pct}%;background:${t.color};border-radius:4px;transition:width .4s"></div>
+          </div>
+          <div style="font-size:13px;font-weight:700;color:${t.color};margin-top:6px">${t.pct}% del total</div>
+        </div>`).join('')}
+    </div>`
+
+  // Proyección
+  const pct=Math.min(100,proy>0?Math.round(rMes/proy*100):100)
+  document.getElementById('fin-proy').innerHTML = `
+    <div class="card-t">${esMesActual?'Proyección del mes':mesNom+' — Resumen'}</div>
+    <div style="font-size:30px;font-weight:800;color:var(--naranja);margin-bottom:6px">${$(esMesActual?proy:rMes)}</div>
+    <div style="font-size:13px;color:var(--texto-dim);margin-bottom:14px">${esMesActual?`Basado en ${$(rMes)} en ${diasTranscurridos} días`:`Total del mes · ${cMes.length} reservas`}</div>
+    <div style="font-size:13px;font-weight:600;margin-bottom:5px">${esMesActual?'Progreso del mes':'Vs mes anterior'}</div>
+    <div class="pb-wrap"><div class="pb-fill" style="width:${pct}%;background:var(--naranja)"></div></div>
+    <div style="font-size:12px;color:var(--texto-dim);margin-top:4px">${esMesActual?pct+'% del proyectado':$(rMAnt)+' el mes anterior'}</div>
+    <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--borde);font-size:15px;font-weight:700;color:${cmb>=0?'var(--verde)':'var(--rojo)'}">
+      ${cmb>=0?`↑ ${cmb}% mejor que el mes anterior`:`↓ ${Math.abs(cmb)}% por debajo del mes anterior`}
+    </div>`
+}
+
+/* ══════════════════════════════════════
+   OCUPACION
+   ══════════════════════════════════════ */
+let ocupPeriodo = 28
+
+function setOcupPeriodo(dias) {
+  ocupPeriodo = dias
+  document.querySelectorAll('[id^="ocup-btn-"]').forEach(b => {
+    b.classList.remove('btn-orange')
+    b.style.background = ''
+    b.style.color = ''
+  })
+  const btn = document.getElementById('ocup-btn-'+dias)
+  if (btn) btn.classList.add('btn-orange')
+  renderOcupacion()
+}
+
+function renderOcupacion() {
+  const hoy = new Date()
+  const hN = new Date(hoy); hN.setDate(hoy.getDate()-ocupPeriodo)
+  const h28s = hN.toISOString().split('T')[0]
+  const hoyS = hoy.toISOString().split('T')[0]
+  // Para fijos: extender hasta el domingo de esta semana para capturar días futuros de la semana actual
+  const domSemana = new Date(hoy); domSemana.setDate(hoy.getDate() + (7 - hoy.getDay()) % 7 || 7)
+  const domSemanaS = domSemana.toISOString().split('T')[0]
+  const c = [...conf().filter(r=>r.fecha>=h28s), ...fixedOccurrencesRange(h28s, domSemanaS)]
+
+  const semanas = Math.round(ocupPeriodo / 7)
+  const cntsOcup = conteoDias(h28s, hoyS)
+  let total28 = 0
+  for(let i=0;i<7;i++) total28 += CANCHAS.length * horariosDelDia(i).length * cntsOcup[i]
+  const pGlob = total28>0 ? Math.round(c.length/total28*100) : 0
+  const labelPeriodo = ocupPeriodo<=7?'última semana':ocupPeriodo<=14?'últimas 2 semanas':ocupPeriodo<=28?'últimas 4 semanas':ocupPeriodo<=90?'últimos 3 meses':'últimos 6 meses'
+  const titEl = document.getElementById('ocup-heatmap-title')
+  if (titEl) titEl.textContent = `Mapa de calor — días × horarios (${labelPeriodo})`
+
+  // porHora: cuenta reservas que CUBREN ese horario (solo días donde esa hora es válida)
+  const porHora = {}
+  HORARIOS.forEach(h => {
+    const sT = toMinsDay(h)
+    const n = c.filter(r => { const rS=toMinsDay(r.hora),rE=rS+(r.duracion||1)*60; return sT>=rS&&sT<rE }).length
+    // denominador: sum de canchas * ocurrencias de días que tienen esa hora
+    let den = 0
+    for(let i=0;i<7;i++) { if(horariosDelDia(i).includes(h)) den += CANCHAS.length * cntsOcup[i] }
+    porHora[h] = den>0 ? Math.round(n/den*100) : 0
+  })
+  const [mH,mHP] = Object.entries(porHora).sort((a,b)=>b[1]-a[1])[0]
+  const [pH,pHP] = Object.entries(porHora).sort((a,b)=>a[1]-b[1])[0]
+
+  const porDia = {}
+  for(let i=0;i<7;i++){
+    const n = c.filter(r=>new Date(r.fecha+'T12:00').getDay()===i).length
+    const den = CANCHAS.length * horariosDelDia(i).length * (cntsOcup[i]||1)
+    porDia[i] = Math.round(n/den*100)
+  }
+  const [mD,mDP] = Object.entries(porDia).sort((a,b)=>b[1]-a[1])[0]
+
+  document.getElementById('ocup-kpis').innerHTML =
+    kpi('Ocupación global', pGlob+'%', labelPeriodo, '#2563B0') +
+    kpi('Mejor horario', mH, mHP+'% ocupación', '#22c55e') +
+    kpi('Peor horario', pH, pHP+'% ocupación', '#ef4444') +
+    kpi('Mejor día', DIAS_C[mD], mDP+'% ocupación', '#E8761A')
+
+  // Heatmap — filas = HORARIOS (weekday union), columnas = días
+  // celdas sin horario para ese día → "cerrado"
+  let hm = '<div class="heatmap"><div class="hm-head"></div>'
+  DIAS_C.forEach(d => hm += `<div class="hm-head">${d}</div>`)
+  HORARIOS.forEach(hora => {
+    hm += `<div class="hm-time">${hora}</div>`
+    for(let dia=0;dia<7;dia++){
+      if (!horariosDelDia(dia).includes(hora)) {
+        hm += `<div class="hm-cell" style="background:rgba(255,255,255,.03);color:var(--texto-dim);font-size:10px" title="${hora} ${DIAS_ES[dia]}: cerrado">—</div>`
+        continue
+      }
+      const sT = toMinsDay(hora)
+      const n = c.filter(r => {
+        if (new Date(r.fecha+'T12:00').getDay() !== dia) return false
+        const rS=toMinsDay(r.hora), rE=rS+(r.duracion||1)*60
+        return sT>=rS && sT<rE
+      }).length
+      const den = CANCHAS.length * (cntsOcup[dia]||1)
+      const pct = Math.round(n/den*100)
+      let bg, tc
+      if(pct===0){bg='rgba(239,68,68,.15)';tc='#ef4444'}
+      else if(pct<30){bg='rgba(245,158,11,.2)';tc='#f59e0b'}
+      else if(pct<60){bg='rgba(37,99,176,.45)';tc='rgba(255,255,255,.8)'}
+      else{bg='rgba(22,163,74,.55)';tc='#fff'}
+      hm += `<div class="hm-cell" style="background:${bg};color:${tc}" title="${hora} ${DIAS_ES[dia]}: ${pct}%">${pct}%</div>`
+    }
+  })
+  hm += '</div>'
+  document.getElementById('heatmap').innerHTML = hm
+
+  const hor = Object.entries(porHora).sort((a,b)=>b[1]-a[1])
+  document.getElementById('ocup-mejores').innerHTML = `<div class="card-t">Mejores horarios</div>` +
+    hor.slice(0,5).map(([h,p])=>`
+      <div style="margin-bottom:9px">
+        <div style="display:flex;justify-content:space-between;margin-bottom:3px">
+          <span style="font-size:13px;font-weight:600">${h}</span>
+          <span style="font-size:13px;color:var(--verde);font-weight:700">${p}%</span>
+        </div>
+        <div class="pb-wrap"><div class="pb-fill" style="width:${p}%;background:var(--verde)"></div></div>
+      </div>`).join('')
+
+  document.getElementById('ocup-peores').innerHTML = `<div class="card-t">Horarios con baja ocupación 🧊</div>` +
+    hor.slice(-5).reverse().map(([h,p])=>`
+      <div style="margin-bottom:9px">
+        <div style="display:flex;justify-content:space-between;margin-bottom:3px">
+          <span style="font-size:13px;font-weight:600">${h}</span>
+          <span style="font-size:13px;color:var(--rojo);font-weight:700">${p}%</span>
+        </div>
+        <div class="pb-wrap"><div class="pb-fill" style="width:${p}%;background:var(--rojo)"></div></div>
+      </div>`).join('')
+}
+
+/* ══════════════════════════════════════
+   CLIENTES
+   ══════════════════════════════════════ */
+function renderClientes() {
+  const hoy = new Date()
+  const h30 = new Date(hoy.getTime()-30*86400000).toISOString().split('T')[0]
+  const iMes = new Date(hoy.getFullYear(),hoy.getMonth(),1).toISOString().split('T')[0]
+  const hoyS = hoy.toISOString().split('T')[0]
+  // clientes fijos (tipo='cliente') como entradas virtuales del mes actual
+  const fijOcurr = fixedOccurrencesRange(iMes, hoyS).filter(r=>r.monto>0)
+  const cConf = [...conf(), ...fijOcurr]
+  // Para lista de clientes únicos usamos TODAS las reservas (incluso canceladas) para que no desaparezcan
+  const todosClientes = [...new Set([...RESERVAS, ...fijOcurr].map(r=>r.cliente))]
+  const unicos = todosClientes
+
+  const nuevos = unicos.filter(n => RESERVAS.filter(r=>r.cliente===n&&r.fecha<iMes).length===0 && RESERVAS.some(r=>r.cliente===n&&r.fecha>=iMes))
+  const inacCount = unicos.filter(n => {
+    const u = RESERVAS.filter(r=>r.cliente===n).sort((a,b)=>b.fecha.localeCompare(a.fecha))[0]
+    return u && u.fecha < h30
+  }).length
+
+  document.getElementById('cli-kpis').innerHTML =
+    kpi('Clientes totales', unicos.length, 'con al menos 1 reserva', '#2563B0') +
+    kpi('Nuevos este mes', nuevos.length, 'primera reserva', '#22c55e') +
+    kpi('Inactivos +30 días', inacCount, 'sin reservas recientes', '#ef4444')
+
+  // Top 10 — revenue de confirmadas, historial de todas (incluyendo canceladas)
+  const top = unicos.map(n => {
+    const rsAll  = [...RESERVAS.filter(r=>r.cliente===n), ...fijOcurr.filter(r=>r.cliente===n)]
+    const rsConf = cConf.filter(r=>r.cliente===n)
+    const rsCanc = RESERVAS.filter(r=>r.cliente===n&&r.estado==='cancelada')
+    return {n, count:rsAll.length, conf:rsConf.length, canc:rsCanc.length, total:rsConf.reduce((s,r)=>s+r.monto,0), tel:rsAll[0]?.telefono||''}
+  }).sort((a,b)=>b.count-a.count).slice(0,10)
+
+  document.getElementById('top-cli').innerHTML = top.map(cl=>`
+    <div class="cli-row">
+      <div style="display:flex;align-items:center;gap:10px">
+        <div class="cli-av">${cl.n[0]}</div>
+        <div><div class="cli-name">${cl.n}</div><div class="cli-meta">${cl.tel}</div></div>
+      </div>
+      <div style="text-align:right">
+        <div class="cli-count">${cl.conf} confirmadas${cl.canc>0?` <span style="color:var(--rojo);font-weight:400;font-size:10px">(${cl.canc} canc.)</span>`:''}</div>
+        <div class="cli-total">${$(cl.total)}</div>
+      </div>
+    </div>`).join('')
+
+  // Inactivos
+  const inac = unicos.filter(n => {
+    const u = RESERVAS.filter(r=>r.cliente===n).sort((a,b)=>b.fecha.localeCompare(a.fecha))[0]
+    return u && u.fecha < h30
+  }).map(n => {
+    const rs = RESERVAS.filter(r=>r.cliente===n)
+    const u = rs.sort((a,b)=>b.fecha.localeCompare(a.fecha))[0]
+    return {n, dias:Math.round((new Date()-new Date(u.fecha+'T12:00'))/86400000), tel:u.telefono, count:rs.length}
+  }).sort((a,b)=>b.dias-a.dias).slice(0,8)
+
+  document.getElementById('cli-inac').innerHTML = inac.length===0
+    ? '<p style="color:var(--texto-dim);font-size:13px;padding:14px 0">Sin clientes inactivos.</p>'
+    : inac.map(cl=>`
+      <div class="cli-row">
+        <div style="display:flex;align-items:center;gap:10px">
+          <div class="cli-av inac">${cl.n[0]}</div>
+          <div><div class="cli-name">${cl.n}</div><div class="cli-meta">${cl.count} reservas · ${cl.tel}</div></div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-size:13px;font-weight:700;color:var(--rojo)">${cl.dias}d</div>
+          <div style="font-size:11px;color:var(--texto-dim)">sin reservar</div>
+        </div>
+      </div>`).join('')
+}
+
+/* ══════════════════════════════════════
+   RECOMENDACIONES
+   ══════════════════════════════════════ */
+function renderRecomendaciones() {
+  const hoy = new Date()
+  const h30 = new Date(hoy.getTime()-30*86400000).toISOString().split('T')[0]
+  const h7  = new Date(hoy.getTime()-7*86400000).toISOString().split('T')[0]
+  const h14 = new Date(hoy.getTime()-14*86400000).toISOString().split('T')[0]
+  const hoyS30 = hoy.toISOString().split('T')[0]
+  const c30 = [...conf().filter(r=>r.fecha>=h30), ...fixedOccurrencesRange(h30, hoyS30)]
+  const cAll = conf()
+  const recs = []
+
+  // Horarios muertos
+  const porHora = {}
+  HORARIOS.forEach(h => {
+    const n = c30.filter(r=>r.hora===h).length
+    porHora[h] = Math.round(n/(CANCHAS.length*30)*100)
+  })
+  const [peorH, peorHP] = Object.entries(porHora).sort((a,b)=>a[1]-b[1])[0]
+  const SVG = {
+    target: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>`,
+    precio: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>`,
+    calendario: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>`,
+    cancha: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="18" rx="2"/><line x1="12" y1="3" x2="12" y2="21"/><path d="M12 8a4 4 0 0 1 0 8"/><path d="M12 8a4 4 0 0 0 0 8"/></svg>`,
+    users: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>`,
+    trending_down: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 18 13.5 8.5 8.5 13.5 1 6"/><polyline points="17 18 23 18 23 12"/></svg>`,
+    trending_up: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>`,
+    cancel: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>`,
+    balance: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="2" x2="12" y2="22"/><path d="M5 12H2l5-9 5 9H9"/><path d="M19 12h-3l5 9-5-9h-2"/></svg>`,
+  }
+
+  if(peorHP < 25) recs.push({tipo:'promo',ico:SVG.target,tit:`Horario casi vacío: ${peorH}hs`,txt:`El turno de las ${peorH}hs tuvo solo ${peorHP}% de ocupación en los últimos 30 días. Lanzar una promo específica — "Reservá las ${peorH}hs y pagá 20% menos" — puede captar jugadores que evitan el pico y cubrir ese hueco sin bajar los precios generales.`})
+
+  // Mejor horario → subir precio
+  const [mejH, mejHP] = Object.entries(porHora).sort((a,b)=>b[1]-a[1])[0]
+  if(mejHP > 85) recs.push({tipo:'precio',ico:SVG.precio,tit:`Precio diferencial en ${mejH}hs`,txt:`El turno de las ${mejH}hs tiene ${mejHP}% de ocupación — se llena solo. La demanda aguanta un precio más alto en ese horario. Un ajuste del 10-15% te generaría más ingreso sin perder reservas.`})
+
+  // Día flojo
+  const porDia = {}
+  for(let i=0;i<7;i++){
+    const n = c30.filter(r=>new Date(r.fecha+'T12:00').getDay()===i).length
+    porDia[i] = Math.round(n/(CANCHAS.length*horariosDelDia(i).length*4)*100)
+  }
+  const [peorD, peorDP] = Object.entries(porDia).sort((a,b)=>a[1]-b[1])[0]
+  if(peorDP < 40) recs.push({tipo:'promo',ico:SVG.calendario,tit:`Los ${DIAS_ES[peorD]}s necesitan empuje`,txt:`Los ${DIAS_ES[peorD]}s son el día más flojo con ${peorDP}% de ocupación. Una promo puntual — precio especial para ese día, turno 2x1, o descuento para grupos nuevos — puede mover la aguja sin afectar el resto de la semana.`})
+
+  // Cancha menos rentable
+  const porCancha = CANCHAS.map(ca => ({ca, tot:c30.filter(r=>r.cancha===ca).reduce((s,r)=>s+r.monto,0), n:c30.filter(r=>r.cancha===ca).length}))
+  const mejor = [...porCancha].sort((a,b)=>b.tot-a.tot)[0]
+  const peor  = [...porCancha].sort((a,b)=>a.tot-b.tot)[0]
+  if(peor.tot < mejor.tot * 0.65) recs.push({tipo:'alerta',ico:SVG.cancha,tit:`${peor.ca} rinde por debajo`,txt:`La ${peor.ca} generó ${$(peor.tot)} vs ${$(mejor.tot)} de la más rentable este mes. Revisá si hay algo que la hace menos atractiva: iluminación, estado del piso, temperatura. También podés listarla con precio ligeramente menor para impulsar la demanda.`})
+
+  // Clientes inactivos
+  const unicos = [...new Set(cAll.map(r=>r.cliente))]
+  const inac = unicos.filter(n => { const u=cAll.filter(r=>r.cliente===n).sort((a,b)=>b.fecha.localeCompare(a.fecha))[0]; return u&&u.fecha<h30 }).length
+  if(inac > 4) recs.push({tipo:'info',ico:SVG.users,tit:`${inac} clientes que no volvieron`,txt:`Tenés ${inac} clientes con historial que no reservaron en los últimos 30 días. Un mensaje de WhatsApp personalizado ("volvé a jugar, te dejamos un 10% off esta semana") puede reactivar varios. Los clientes que ya conocen el lugar se reconquistan más fácil que conseguir nuevos.`})
+
+  // Comparativa semanal
+  const rSemAct = cAll.filter(r=>r.fecha>=h7).reduce((s,r)=>s+r.monto,0)
+  const rSemAnt = cAll.filter(r=>r.fecha>=h14&&r.fecha<h7).reduce((s,r)=>s+r.monto,0)
+  if(rSemAnt > 0) {
+    const dif = Math.round((rSemAct-rSemAnt)/rSemAnt*100)
+    if(dif < -15) recs.push({tipo:'alerta',ico:SVG.trending_down,tit:`Caída del ${Math.abs(dif)}% esta semana`,txt:`Esta semana recaudaste ${$(rSemAct)} vs ${$(rSemAnt)} la semana anterior — una baja del ${Math.abs(dif)}%. Revisá si hubo cancelaciones inusuales o feriados. Si la tendencia continúa dos semanas seguidas, considerá activar alguna promoción.`})
+    else if(dif > 20) recs.push({tipo:'info',ico:SVG.trending_up,tit:`Semana ${dif}% mejor que la anterior`,txt:`Esta semana superaste a la anterior en ${dif}%. Buen momento para reforzar lo que está funcionando y asegurarte de que los turnos pico tengan cobertura completa.`})
+  }
+
+  // Tasa de cancelación
+  const canceladas = RESERVAS.filter(r=>r.fecha>=h30&&r.estado==='cancelada').length
+  const totales = RESERVAS.filter(r=>r.fecha>=h30).length
+  const tasaCan = totales > 0 ? Math.round(canceladas/totales*100) : 0
+  if(tasaCan > 12) recs.push({tipo:'alerta',ico:SVG.cancel,tit:`Tasa de cancelación alta: ${tasaCan}%`,txt:`En los últimos 30 días, ${tasaCan}% de las reservas fueron canceladas. Una tasa por encima del 10% empieza a doler en ingresos. Pensá en una política de cancelación con plazo mínimo (ej: cancelación gratis hasta 24hs antes), o confirmación por WhatsApp el día anterior para reducir los no-shows.`})
+
+  // Ocupación por cancha equilibrada
+  const maxN = Math.max(...porCancha.map(x=>x.n))
+  const minN = Math.min(...porCancha.map(x=>x.n))
+  if(maxN > minN * 2.5) {
+    const mPop = porCancha.sort((a,b)=>b.n-a.n)[0]
+    recs.push({tipo:'info',ico:SVG.balance,tit:`Demanda muy concentrada en ${mPop.ca}`,txt:`La ${mPop.ca} recibe más del doble de reservas que la menos pedida. Esto puede generar desgaste desigual de las instalaciones. Podrías rotar la cancha "favorita" del panel de elección o generar incentivos para distribuir mejor la demanda.`})
+  }
+
+  document.getElementById('recs').innerHTML = recs.length === 0
+    ? '<div class="rec-card"><div class="rec-body"><h4>Todo en orden</h4><p>No hay recomendaciones urgentes por ahora. Seguí monitoreando.</p></div></div>'
+    : recs.map(r=>`
+      <div class="rec-card">
+        <div class="rec-ico ${r.tipo}">${r.ico}</div>
+        <div class="rec-body">
+          <h4>${r.tit}</h4>
+          <p>${r.txt}</p>
+          <span class="rec-tag ${r.tipo}">${{promo:'Promoción',precio:'Precio',alerta:'Atención',info:'Información'}[r.tipo]}</span>
+        </div>
+      </div>`).join('')
+}
+
+/* ══════════════════════════════════════
+   RESERVAS
+   ══════════════════════════════════════ */
+function renderReservas() {
+  const fF = document.getElementById('f-fecha').value
+  const fC = document.getElementById('f-cancha').value
+  const fE = document.getElementById('f-estado').value
+  const fCl = document.getElementById('f-cli').value.toLowerCase()
+
+  let res = [...RESERVAS]
+  if(fF) res=res.filter(r=>r.fecha===fF)
+  if(fC) res=res.filter(r=>r.cancha===fC)
+  if(fE) res=res.filter(r=>r.estado===fE)
+  if(fCl) res=res.filter(r=>r.cliente.toLowerCase().includes(fCl))
+  res.sort((a,b)=>b.fecha.localeCompare(a.fecha)||a.hora.localeCompare(b.hora))
+
+  const tb = document.getElementById('res-tbody')
+  if(!res.length){ tb.innerHTML='<tr><td colspan="10" style="text-align:center;color:var(--texto-dim);padding:28px">Sin resultados</td></tr>'; return }
+  tb.innerHTML = res.slice(0,150).map(r=>{
+    const dur=r.duracion||1
+    const durLbl=dur===1?'1h':dur===1.5?'1½h':dur===2?'2h':dur===2.5?'2½h':'3h'
+    const sena = r.sena || 0
+    const saldo = r.monto - sena
+    const senaCell = r.estado==='cancelada' ? '—'
+      : sena > 0
+        ? `<span style="color:#4ade80;font-size:11px">${$(sena)}</span><span style="color:var(--texto-dim);font-size:11px"> / </span><span style="color:#fb923c;font-weight:700">${$(saldo)}</span>`
+        : `<span style="color:var(--texto-dim);font-size:11px">sin seña</span>`
+    return `
+    <tr>
+      <td>${formatF(r.fecha)}</td><td>${r.hora}</td>
+      <td style="color:var(--texto-dim)">${durLbl}</td>
+      <td>${r.cancha}</td>
+      <td style="font-weight:600">${r.cliente}</td>
+      <td style="color:var(--texto-dim)">${r.telefono}</td>
+      <td>${r.estado!=='cancelada'?$(r.monto):'—'}</td>
+      <td>${senaCell}</td>
+      <td><span class="badge ${r.estado}">${r.estado}</span></td>
+      <td><div style="display:flex;gap:5px;align-items:center">
+        <button class="btn btn-sm" onclick="openEditModal(${r.id})" style="background:var(--azul-dim);border:1px solid var(--azul-borde);color:var(--blanco)">Editar</button>
+        <button onclick="eliminarRes(${r.id})" title="Eliminar definitivamente" style="background:rgba(239,68,68,.12);border:1px solid rgba(239,68,68,.3);border-radius:7px;color:var(--rojo);width:30px;height:30px;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;transition:background .15s;flex-shrink:0" onmouseover="this.style.background='rgba(239,68,68,.25)'" onmouseout="this.style.background='rgba(239,68,68,.12)'"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg></button>
+        ${r.estado!=='cancelada'
+          ? `<button class="btn btn-danger btn-sm" onclick="cancelarRes(${r.id})">Cancelar</button>`
+          : ''}
+      </div></td>
+    </tr>`}).join('')
+}
+
+async function cancelarRes(id) {
+  const r = RESERVAS.find(x=>x.id===id)
+  if(!r) return
+  if(!confirm(`¿Cancelar la reserva de ${r.cliente} el ${formatF(r.fecha)} a las ${r.hora}?`)) return
+
+  if (!isDemoMode) {
+    const { error } = await sbClient.from('reservas').update({ estado:'cancelada' }).eq('id', id)
+    if (error) { alert('Error al cancelar: ' + error.message); return }
+  }
+
+  r.estado = 'cancelada'
+  renderReservas()
+}
+
+async function eliminarRes(id) {
+  const r = RESERVAS.find(x=>x.id===id)
+  if(!r) return
+  if(!confirm(`¿Eliminar definitivamente la reserva de ${r.cliente} el ${formatF(r.fecha)} a las ${r.hora}?`)) return
+  if (!isDemoMode) {
+    const { error } = await sbClient.from('reservas').delete().eq('id', id)
+    if (error) { alert('Error al eliminar: ' + error.message); return }
+  }
+  RESERVAS = RESERVAS.filter(x=>x.id!==id)
+  renderReservas()
+  renderHoy()
+}
+
+/* ══════════════════════════════════════
+   MODAL
+   ══════════════════════════════════════ */
+let selectedCancha = null
+let editingId = null
+
+function openModal() {
+  editingId = null
+  selectedCancha = null
+  document.getElementById('modal-t').textContent = 'Nueva Reserva'
+  const mFecha = document.getElementById('m-fecha')
+  mFecha.value = businessDateStr()
+  mFecha.min = businessDateStr()
+  populateHoraSelect('m-hora', true)
+  document.getElementById('m-duracion').value = '1'
+  document.getElementById('m-cli').value = ''
+  document.getElementById('m-tel').value = ''
+  document.getElementById('m-monto').value = '50000'
+  document.getElementById('m-sena').value = ''
+  document.getElementById('m-saldo-preview').style.display = 'none'
+  calcSaldo()
+  document.getElementById('modal-paso2').style.display = 'none'
+  document.getElementById('btn-guardar').style.display = 'none'
+  document.getElementById('m-disponibilidad').innerHTML = ''
+  document.getElementById('m-estado').value = 'confirmada'
+  document.getElementById('modal').style.display = 'flex'
+  checkDisponibilidad()
+}
+
+function openEditModal(id) {
+  const r = RESERVAS.find(x=>x.id===id)
+  if (!r) return
+  editingId = id
+  selectedCancha = r.cancha
+  document.getElementById('modal-t').textContent = 'Editar Reserva'
+  populateHoraSelect('m-hora')
+  document.getElementById('m-fecha').value = r.fecha
+  document.getElementById('m-hora').value = r.hora
+  document.getElementById('m-duracion').value = String(r.duracion||1)
+  document.getElementById('m-cli').value = r.cliente
+  document.getElementById('m-tel').value = r.telefono||''
+  const pphEdit = Math.round((r.monto||0) / (r.duracion||1))
+  document.getElementById('m-monto').value = String(pphEdit)
+  document.getElementById('m-sena').value = String(r.sena||0)
+  document.getElementById('m-estado').value = r.estado
+  calcSaldo()
+  // Mostrar cancha actual seleccionada directamente
+  const dur = r.duracion||1
+  const durLabel = dur===1?'1h':dur===1.5?'1½h':dur===2?'2h':dur===2.5?'2½h':'3h'
+  document.getElementById('m-disponibilidad').innerHTML = `
+    <div style="font-size:11px;font-weight:700;color:var(--texto-dim);text-transform:uppercase;letter-spacing:.07em;margin-bottom:8px">Cancha actual — podés cambiarla</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap" id="m-edit-canchas">
+      ${CANCHAS.map(ca=>`<button onclick="seleccionarCancha('${ca}',this)" style="padding:9px 18px;background:${ca===r.cancha?'var(--naranja)':'var(--azul-dark)'};border:1px solid ${ca===r.cancha?'var(--naranja)':'var(--borde-2)'};border-radius:8px;color:#fff;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;transition:all .15s" ${ca===r.cancha?'class="sel"':''}>${ca}</button>`).join('')}
+    </div>`
+  document.getElementById('m-resumen-slot').textContent = `${r.cancha} · ${formatF(r.fecha)} · ${r.hora}hs · ${durLabel}`
+  document.getElementById('modal-paso2').style.display = 'block'
+  document.getElementById('btn-guardar').style.display = 'inline-flex'
+  document.getElementById('modal').style.display = 'flex'
+}
+
+function checkDisponibilidad() {
+  const fecha    = document.getElementById('m-fecha').value
+  const hora     = document.getElementById('m-hora').value
+  const duracion = parseFloat(document.getElementById('m-duracion').value) || 1
+  if (!fecha || !hora) return
+
+  const sStart = toMinsDay(hora)
+  const sEnd   = sStart + duracion * 60
+
+  // Validar que la hora esté dentro del horario del complejo para ese día
+  const diaReserva = new Date(fecha+'T12:00:00').getDay()
+  if (!horariosDelDia(diaReserva).includes(hora)) {
+    document.getElementById('m-disponibilidad').innerHTML = `
+      <div style="background:var(--rojo-dim);border:1px solid rgba(239,68,68,.25);border-radius:8px;padding:10px 14px;font-size:13px;font-weight:600;color:var(--rojo)">
+        El complejo no abre a las ${hora}hs ese día
+      </div>`
+    return
+  }
+
+  const libres = CANCHAS.filter(ca => {
+    // reservas existentes
+    const conflictoRes = RESERVAS.some(r => {
+      if (r.fecha!==fecha||r.cancha!==ca||r.estado==='cancelada') return false
+      if (editingId && r.id===editingId) return false
+      const rS=toMinsDay(r.hora), rE=rS+(r.duracion||1)*60
+      return sStart<rE && sEnd>rS
+    })
+    if (conflictoRes) return false
+    // horarios fijos
+    const conflictoFijo = FIXED_SCHEDULES.some(f => {
+      if (f.cancha!==ca||parseInt(f.dia)!==diaReserva) return false
+      if (f.fechaInicio && fecha < f.fechaInicio) return false
+      if (f.fechaFin    && fecha > f.fechaFin)    return false
+      const fS=toMinsDay(f.horaInicio), fE=fS+f.duracion*60
+      return sStart<fE && sEnd>fS
+    })
+    return !conflictoFijo
+  })
+
+  selectedCancha = null
+  document.getElementById('modal-paso2').style.display = 'none'
+  document.getElementById('btn-guardar').style.display = 'none'
+
+  if (libres.length === 0) {
+    document.getElementById('m-disponibilidad').innerHTML = `
+      <div style="background:var(--rojo-dim);border:1px solid rgba(239,68,68,.25);border-radius:8px;padding:10px 14px;font-size:13px;font-weight:600;color:var(--rojo)">
+        Sin canchas disponibles el ${formatF(fecha)} a las ${hora}hs (${duracion}h)
+      </div>`
+    return
+  }
+
+  const html = `
+    <div style="font-size:11px;font-weight:700;color:var(--texto-dim);text-transform:uppercase;letter-spacing:.07em;margin-bottom:8px">
+      ${libres.length} cancha${libres.length>1?'s':''} libre${libres.length>1?'s':''} · elegí una
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      ${libres.map(ca => `<button onclick="seleccionarCancha('${ca}',this)" style="padding:9px 18px;background:var(--azul-dark);border:1px solid var(--borde-2);border-radius:8px;color:var(--blanco);font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;transition:all .15s" onmouseover="this.style.borderColor='var(--naranja)'" onmouseout="if(!this.classList.contains('sel'))this.style.borderColor='var(--borde-2)'">${ca}</button>`).join('')}
+    </div>`
+  document.getElementById('m-disponibilidad').innerHTML = html
+}
+
+function seleccionarCancha(ca, btn) {
+  selectedCancha = ca
+  document.querySelectorAll('#m-disponibilidad button').forEach(b => {
+    b.style.background = 'var(--azul-dark)'
+    b.style.borderColor = 'var(--borde-2)'
+    b.style.color = 'var(--blanco)'
+    b.classList.remove('sel')
+  })
+  btn.style.background = 'var(--naranja)'
+  btn.style.borderColor = 'var(--naranja)'
+  btn.style.color = '#fff'
+  btn.classList.add('sel')
+
+  const fecha    = document.getElementById('m-fecha').value
+  const hora     = document.getElementById('m-hora').value
+  const duracion = parseFloat(document.getElementById('m-duracion').value) || 1
+  const durLabel = duracion===1?'1h':duracion===1.5?'1½h':duracion===2?'2h':duracion===2.5?'2½h':'3h'
+  document.getElementById('m-resumen-slot').textContent = `${ca} · ${formatF(fecha)} · ${hora}hs · ${durLabel}`
+  document.getElementById('modal-paso2').style.display = 'block'
+  document.getElementById('btn-guardar').style.display = 'inline-flex'
+}
+
+function calcSaldo() {
+  const pph    = parseInt(document.getElementById('m-monto').value) || 0
+  const dur    = parseFloat(document.getElementById('m-duracion').value) || 1
+  const sena   = parseInt(document.getElementById('m-sena').value) || 0
+  const total  = pph * dur
+  const saldo  = total - sena
+  const prev   = document.getElementById('m-saldo-preview')
+  if (pph > 0) {
+    prev.style.display = 'block'
+    let txt = `Total: ${$(total)}`
+    if (dur !== 1) txt += ` (${$(pph)}/h × ${dur}h)`
+    if (sena > 0) txt += ` — Seña: ${$(sena)} — Saldo: ${$(Math.max(0,saldo))}`
+    prev.textContent = txt
+  } else {
+    prev.style.display = 'none'
+  }
+}
+
+function closeModal() {
+  document.getElementById('modal').style.display = 'none'
+  document.getElementById('modal-form-content').style.display = 'block'
+  document.getElementById('modal-wa-screen').style.display = 'none'
+  editingId = null
+}
+
+async function saveReserva() {
+  const fecha   = document.getElementById('m-fecha').value
+  const hora    = document.getElementById('m-hora').value
+  const cliente = document.getElementById('m-cli').value.trim()
+  const tel     = document.getElementById('m-tel').value.trim()
+  const pph     = parseInt(document.getElementById('m-monto').value) || 0
+  const sena    = parseInt(document.getElementById('m-sena').value) || 0
+  const estado  = document.getElementById('m-estado').value
+  if (!selectedCancha) { alert('Seleccioná una cancha'); return }
+  if (!cliente || !tel) { alert('Completá nombre y teléfono'); return }
+
+  const duracion = parseFloat(document.getElementById('m-duracion').value) || 1
+  const monto = pph * duracion
+  const nueva = { cancha:selectedCancha, fecha, hora, duracion, cliente, telefono:tel, monto, sena, estado }
+
+  // ── EDITAR ──
+  if (editingId) {
+    if (isDemoMode) {
+      const idx = RESERVAS.findIndex(r=>r.id===editingId)
+      if (idx>=0) RESERVAS[idx] = {...RESERVAS[idx], ...nueva}
+    } else {
+      const { error } = await sbClient.from('reservas').update(nueva).eq('id', editingId)
+      if (error) { alert('Error al guardar: ' + error.message); return }
+      const idx = RESERVAS.findIndex(r=>r.id===editingId)
+      if (idx>=0) RESERVAS[idx] = {...RESERVAS[idx], ...nueva}
+    }
+    editingId = null
+    renderReservas(); renderHoy()
+    mostrarConfirmacionWA(nueva)
+    return
+  }
+
+  // ── NUEVA ──
+  if (isDemoMode) {
+    const maxId = RESERVAS.length ? Math.max(...RESERVAS.map(r=>r.id)) : 0
+    RESERVAS.push({id:maxId+1, ...nueva, created_at:new Date().toISOString()})
+    renderReservas()
+    mostrarConfirmacionWA(nueva)
+    return
+  }
+
+  let { data, error } = await sbClient.from('reservas').insert([nueva]).select().single()
+  if (error) {
+    // columnas sena/duracion aún no existen → reintentar sin ellas
+    if (error.message && (error.message.includes('sena') || error.message.includes('duracion'))) {
+      const { cancha, fecha, hora, cliente, telefono, monto, estado } = nueva
+      const r2 = await sbClient.from('reservas').insert([{cancha,fecha,hora,cliente,telefono,monto,estado}]).select().single()
+      if (r2.error) { alert('Error al guardar: ' + r2.error.message); return }
+      data = r2.data
+    } else {
+      alert('Error al guardar: ' + error.message); return
+    }
+  }
+  RESERVAS.unshift({ ...data, monto: data.monto||0, duracion: data.duracion||nueva.duracion||1, sena: data.sena||nueva.sena||0 })
+  renderReservas(); renderHoy()
+  mostrarConfirmacionWA(nueva)
+}
+
+function mostrarConfirmacionWA(r) {
+  const saldo = (r.monto||0) - (r.sena||0)
+  const dur = r.duracion||1
+  const durLbl = dur===1?'1 hora':dur===1.5?'1 hora y media':dur===2?'2 horas':dur===2.5?'2 horas y media':'3 horas'
+  const fechaLbl = formatF(r.fecha)
+
+  let msg = `Hola ${r.cliente}, tu reserva en Break Point Padel esta confirmada.\n\n`
+  msg += `Fecha: ${fechaLbl}\n`
+  msg += `Hora: ${r.hora}hs (${durLbl})\n`
+  msg += `${r.cancha}\n`
+  if (r.monto > 0) {
+    msg += `Total: $${Math.round(r.monto).toLocaleString('es-AR')}\n`
+    if (r.sena > 0) {
+      msg += `Seña abonada: $${Math.round(r.sena).toLocaleString('es-AR')}\n`
+      msg += `Saldo a abonar: $${Math.round(Math.max(0,saldo)).toLocaleString('es-AR')}\n`
+    }
+  }
+  msg += `\nNos vemos en la cancha!`
+
+  const telLimpio = (r.telefono||'').replace(/\D/g,'')
+  const waUrl = telLimpio ? `https://wa.me/54${telLimpio}?text=${encodeURIComponent(msg)}` : null
+
+  document.getElementById('wa-nombre').textContent = r.cliente
+  document.getElementById('wa-detalle').textContent = `${r.cancha} · ${fechaLbl} · ${r.hora}hs · ${durLbl}`
+  document.getElementById('wa-msg-preview').textContent = msg
+  const btnWA = document.getElementById('wa-btn')
+  if (waUrl) {
+    btnWA.style.display = 'inline-flex'
+    btnWA.onclick = () => { window.open(waUrl, '_blank'); closeModal() }
+  } else {
+    btnWA.style.display = 'none'
+  }
+
+  document.getElementById('modal-form-content').style.display = 'none'
+  document.getElementById('modal-wa-screen').style.display = 'block'
+}
+
+/* ══════════════════════════════════════
+   RESUMEN SEMANAL
+   ══════════════════════════════════════ */
+function renderResumen() {
+  const sem = semanaFechas()
+  const lunes = sem[0], dom = sem[6]
+  const c = conf()
+  const semAct = [...c.filter(r=>r.fecha>=lunes&&r.fecha<=dom), ...fixedOccurrencesRange(lunes, dom)]
+
+  const semAntL = new Date(lunes); semAntL.setDate(semAntL.getDate()-7)
+  const semAntD = new Date(dom); semAntD.setDate(semAntD.getDate()-7)
+  const sAL = semAntL.toISOString().split('T')[0], sAD = semAntD.toISOString().split('T')[0]
+  const semAntArr = [...c.filter(r=>r.fecha>=sAL&&r.fecha<=sAD), ...fixedOccurrencesRange(sAL, sAD)]
+
+  const resActReales = c.filter(r=>r.fecha>=lunes&&r.fecha<=dom)
+  const totRec = semAct.reduce((s,r)=>s+r.monto,0)
+  const totAnt = semAntArr.reduce((s,r)=>s+r.monto,0)
+  const cmb = totAnt>0 ? Math.round((totRec-totAnt)/totAnt*100) : 0
+  const totalSlotsSem = sem.reduce((s,d)=>s+CANCHAS.length*horariosDelDia(new Date(d+'T12:00').getDay()).length,0)
+  const pOcup = totalSlotsSem>0 ? Math.round(semAct.length/totalSlotsSem*100) : 0
+  const [lD,lM,lDd] = lunes.split('-')
+  const [,dM,dDd] = dom.split('-')
+
+  document.getElementById('res-head').innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px">
+      <div>
+        <div class="res-title">Semana del ${parseInt(lDd)} al ${parseInt(dDd)} de ${MESES[parseInt(dM)-1]}</div>
+        <div class="res-sub">Resumen generado automáticamente · ${lunes} → ${dom}</div>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <span class="chip ${cmb>=0?'best':'worst'}">${cmb>=0?'↑':'↓'} ${Math.abs(cmb)}% vs sem. ant.</span>
+        <span class="chip orange">${pOcup}% ocupación</span>
+        ${resActReales.length>0?`<span class="chip info">${resActReales.length} reservas</span>`:''}
+        ${(semAct.length-resActReales.length)>0?`<span class="chip" style="background:rgba(139,92,246,.2);color:#a78bfa">${semAct.length-resActReales.length} turnos fijos</span>`:''}
+      </div>
+    </div>`
+
+  document.getElementById('res-kpis').innerHTML =
+    kpi('Total recaudado', $(totRec), (cmb>=0?`↑ ${cmb}%`:`↓ ${Math.abs(cmb)}%`)+' vs sem. ant.', '#E8761A', cmb>=0?'up':'dn') +
+    kpi('Reservas', resActReales.length, `+ ${semAct.length-resActReales.length} turnos fijos`, '#2563B0') +
+    kpi('Ocupación', pOcup+'%', 'slots disponibles', '#22c55e') +
+    kpi('Prom. por día', $(Math.round(totRec/7)), 'esta semana', '#a855f7')
+
+  // Chart días
+  destroyChart('c-res-dias')
+  const dDias = sem.map(d=>semAct.filter(r=>r.fecha===d).length)
+  const maxV = Math.max(...dDias)
+  const diasSemLbl = ['Lun','Mar','Mié','Jue','Vie','Sáb','Dom']
+  charts['c-res-dias']=new Chart(document.getElementById('c-res-dias').getContext('2d'),{
+    type:'bar',
+    data:{labels:diasSemLbl,datasets:[{data:dDias,backgroundColor:dDias.map(v=>v===maxV&&v>0?'#E8761A':'rgba(37,99,176,.6)'),borderRadius:5,borderWidth:0}]},
+    options:{...cOpts,plugins:{legend:{display:false}}}
+  })
+
+  // Highlights
+  const mejIdx = dDias.indexOf(maxV)
+  const dNoZero = dDias.filter(v=>v>0)
+  const minV = dNoZero.length ? Math.min(...dNoZero) : 0
+  const peorIdx = dDias.indexOf(minV)
+  const clientesNuevos = [...new Set(resActReales.map(r=>r.cliente))].filter(n=>c.filter(r=>r.cliente===n&&r.fecha<lunes).length===0)
+  const ticketProm = resActReales.length ? Math.round(resActReales.reduce((s,r)=>s+r.monto,0)/resActReales.length) : 0
+
+  document.getElementById('res-highlights').innerHTML = `
+    <div class="card-t">Resumen semanal</div>
+    <div style="display:flex;flex-direction:column;gap:12px;margin-top:4px">
+      ${[
+        [`<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#E8761A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>`, `Mejor día: ${diasSemLbl[mejIdx]||'—'}`, `${maxV} reservas confirmadas`],
+        [`<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#E8761A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg>`, `Día más flojo: ${dNoZero.length?diasSemLbl[peorIdx]:'—'}`, `${minV||0} reservas`],
+        [`<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#E8761A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>`, `${clientesNuevos.length} clientes nuevos`, 'primera reserva esta semana'],
+        [`<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#E8761A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>`, `Ticket promedio: ${$(ticketProm)}`, 'por reserva confirmada'],
+        [`<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#E8761A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>`, `Cancha más reservada`, semAct.length ? CANCHAS.reduce((a,ca)=>semAct.filter(r=>r.cancha===ca).length>semAct.filter(r=>r.cancha===a).length?ca:a, CANCHAS[0]) : '—'],
+      ].map(([ico,tit,sub])=>`
+        <div style="display:flex;align-items:center;gap:10px">
+          <div style="width:32px;height:32px;border-radius:8px;background:var(--naranja-dim);display:flex;align-items:center;justify-content:center;flex-shrink:0">${ico}</div>
+          <div><div style="font-size:13px;font-weight:600">${tit}</div><div style="font-size:12px;color:var(--texto-dim)">${sub}</div></div>
+        </div>`).join('')}
+    </div>`
+
+  // Conclusiones
+  const conc = []
+  if(cmb < -10) conc.push(`⚠️ La recaudación bajó ${Math.abs(cmb)}% vs la semana anterior. Revisá cancelaciones o días con demanda inusualmente baja.`)
+  if(cmb > 15) conc.push(`Excelente semana — ${cmb}% de crecimiento. Seguí con la estrategia actual.`)
+  if(pOcup < 45) conc.push(`📣 La ocupación estuvo en ${pOcup}%. Considerá activar una promoción para la próxima semana.`)
+  if(clientesNuevos.length > 2) conc.push(`🎉 Captaste ${clientesNuevos.length} clientes nuevos. Enviales un mensaje de bienvenida para fidelizarlos.`)
+  if(conc.length === 0) conc.push('Semana sin alertas. El negocio sigue su ritmo normal.')
+
+  document.getElementById('res-conclu').innerHTML = `
+    <div class="card-t">Conclusiones</div>
+    ${conc.map(c=>`<div style="padding:10px 0;border-bottom:1px solid var(--borde);font-size:14px;line-height:1.55">${c}</div>`).join('')}`
+}
+
+/* ══════════════════════════════════════
+   NAVEGACIÓN DÍA (sección Hoy)
+   ══════════════════════════════════════ */
+function initGrillaDia() {
+  const inp = document.getElementById('grilla-dia-input')
+  if (inp) { inp.value = businessDateStr(); grillaDia = businessDateStr() }
+}
+
+function onGrillaDia() {
+  const v = document.getElementById('grilla-dia-input').value
+  grillaDia = v || businessDateStr()
+  document.getElementById('btn-ir-hoy').style.display = grillaDia === businessDateStr() ? 'none' : 'inline-flex'
+  actualizarTituloHoy()
+  renderHoy()
+}
+
+function actualizarTituloHoy() {
+  const esHoy = grillaDia === businessDateStr()
+  const d = new Date(grillaDia + 'T12:00:00')
+  const dias = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado']
+  const meses = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre']
+  const label = `${dias[d.getDay()]}, ${d.getDate()} de ${meses[d.getMonth()]} de ${d.getFullYear()}`
+  document.getElementById('tb-title').textContent = esHoy ? 'Hoy' : formatF(grillaDia)
+  document.getElementById('tb-date').textContent = label
+}
+
+function navegarDia(delta) {
+  const inp = document.getElementById('grilla-dia-input')
+  const d = new Date((inp.value || businessDateStr()) + 'T12:00:00')
+  d.setDate(d.getDate() + delta)
+  inp.value = d.toISOString().split('T')[0]
+  onGrillaDia()
+}
+
+function irHoy() {
+  const inp = document.getElementById('grilla-dia-input')
+  inp.value = businessDateStr()
+  onGrillaDia()
+}
+
+/* ══════════════════════════════════════
+   AUTOCOMPLETE CLIENTES
+   ══════════════════════════════════════ */
+function acBuscar() {
+  const drop = document.getElementById('ac-drop')
+  const qTel  = (document.getElementById('m-tel').value||'').replace(/\D/g,'')
+  const qNom  = (document.getElementById('m-cli').value||'').toLowerCase().trim()
+  if (qTel.length < 2 && qNom.length < 2) { drop.style.display='none'; return }
+
+  // Construir mapa de clientes únicos (por teléfono) desde reservas + horarios fijos tipo cliente
+  const vistos = new Map()
+  RESERVAS.forEach(r => {
+    if (r.estado==='cancelada') return
+    const tel = (r.telefono||'').replace(/\D/g,'')
+    if (!tel) return
+    if (!vistos.has(tel)) vistos.set(tel, {nombre:r.cliente, tel:r.telefono, reservas:0, esFijo:false})
+    vistos.get(tel).reservas++
+  })
+  FIXED_SCHEDULES.filter(f=>f.tipo==='cliente'&&f.telefono).forEach(f => {
+    const tel = f.telefono.replace(/\D/g,'')
+    if (!vistos.has(tel)) vistos.set(tel, {nombre:f.etiqueta, tel:f.telefono, reservas:0, esFijo:true})
+  })
+
+  const matches = [...vistos.values()].filter(c => {
+    const telC = c.tel.replace(/\D/g,'')
+    const nomC = c.nombre.toLowerCase()
+    return (qTel.length>=2 && telC.includes(qTel)) || (qNom.length>=2 && nomC.includes(qNom))
+  }).sort((a,b)=>b.reservas-a.reservas).slice(0,6)
+
+  if (!matches.length) { drop.style.display='none'; return }
+  drop.innerHTML = matches.map(c=>`
+    <div class="ac-item" onclick="acSelect('${c.nombre.replace(/'/g,"\\'")}','${c.tel}')">
+      <strong>${c.nombre}</strong>
+      <span>${c.tel}${c.reservas>0?' · '+c.reservas+' reserva'+(c.reservas!==1?'s':''):c.esFijo?' · cliente fijo':''}</span>
+    </div>`).join('')
+  drop.style.display = 'block'
+}
+
+function acSelect(nombre, tel) {
+  document.getElementById('m-cli').value = nombre
+  document.getElementById('m-tel').value = tel
+  document.getElementById('ac-drop').style.display = 'none'
+}
+
+/* ══════════════════════════════════════
+   HORARIOS FIJOS
+   ══════════════════════════════════════ */
+const DIAS_NOMBRE = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado']
+
+function renderHorariosFijos() {
+  const cont = document.getElementById('fijos-tabla')
+  if (!FIXED_SCHEDULES.length) {
+    cont.innerHTML = '<div style="color:var(--texto-dim);font-size:13px;padding:20px 0">No hay horarios fijos cargados.</div>'
+    return
+  }
+  const hoyStr2 = new Date().toISOString().split('T')[0]
+  const activos = FIXED_SCHEDULES.filter(f => !f.fechaFin || f.fechaFin > hoyStr2)
+  if (!activos.length) {
+    cont.innerHTML = '<div style="color:var(--texto-dim);font-size:13px;padding:20px 0">No hay horarios fijos activos.</div>'
+    return
+  }
+  const grupos = []
+  activos.forEach(f => {
+    const key = `${f.cancha}|${f.horaInicio}|${f.duracion}|${f.etiqueta}|${f.tipo||'clase'}`
+    const g = grupos.find(x=>x.key===key)
+    if (g) { g.dias.push(f.dia); g.ids.push(f.id) }
+    else grupos.push({key, cancha:f.cancha, horaInicio:f.horaInicio, duracion:f.duracion, etiqueta:f.etiqueta, tipo:f.tipo||'clase', telefono:f.telefono||'', monto:f.monto||0, precio_hora:f.precio_hora||0, dias:[f.dia], ids:[f.id]})
+  })
+  grupos.sort((a,b)=>a.cancha.localeCompare(b.cancha)||a.horaInicio.localeCompare(b.horaInicio))
+  cont.innerHTML = `
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>Tipo</th><th>Cancha</th><th>Días</th><th>Inicio</th><th>Duración</th><th>Etiqueta / Cliente</th><th>Acciones</th></tr></thead>
+        <tbody>${grupos.map(g=>{
+          const dur=g.duracion===1?'1h':g.duracion===1.5?'1½h':g.duracion===2?'2h':g.duracion===2.5?'2½h':'3h'
+          const diasStr = g.dias.sort((a,b)=>((parseInt(a)||7)-(parseInt(b)||7))).map(d=>DIAS_NOMBRE[parseInt(d)].slice(0,3)).join(', ')
+          const esCliente = g.tipo==='cliente'
+          const badge = esCliente
+            ? `<span style="background:rgba(232,118,26,.15);color:#E8761A;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:700">Cliente fijo</span>`
+            : `<span style="background:rgba(139,92,246,.15);color:#a78bfa;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:700" title="Ocupa el slot pero no suma revenue en el financiero">Clase</span>`
+          const pph = g.precio_hora || Math.round((g.monto||0)/g.duracion) || 0
+          const etiqCell = `${g.etiqueta}${esCliente&&g.telefono?` <span style="color:var(--texto-dim);font-size:11px">· ${g.telefono}</span>`:''}${pph?` <span style="color:#4ade80;font-size:11px">${$(pph)}/h → ${$(pph*g.duracion)}/turno</span>`:''}`
+          return `<tr>
+            <td>${badge}</td>
+            <td>${g.cancha}</td>
+            <td>${diasStr}</td>
+            <td>${g.horaInicio}</td>
+            <td>${dur}</td>
+            <td>${etiqCell}</td>
+            <td><div style="display:flex;gap:5px">
+              <button class="btn btn-sm" onclick="openEditModalFijo(${JSON.stringify(g.ids).replace(/"/g,"'")})" style="background:var(--azul-dim);border:1px solid var(--azul-borde);color:var(--blanco)">Editar</button>
+              <button class="btn btn-danger btn-sm" onclick="eliminarGrupoFijo(${JSON.stringify(g.ids).replace(/"/g,"'")})">Eliminar</button>
+            </div></td>
+          </tr>`}).join('')}
+        </tbody>
+      </table>
+    </div>`
+}
+
+let mfCanchaSeleccionada = null
+
+let editingFijoIds = null
+
+function openModalFijo() {
+  editingFijoIds = null
+  mfCanchaSeleccionada = null
+  populateMfInicio()
+  document.querySelectorAll('#mf-dias input').forEach(cb=>cb.checked=false)
+  document.getElementById('mf-etiqueta').value = ''
+  document.getElementById('mf-tel').value = ''
+  document.getElementById('mf-precio-hora').value = ''
+  document.getElementById('mf-total-preview').style.display = 'none'
+  document.getElementById('mf-paso2').style.display = 'none'
+  document.getElementById('btn-guardar-fijo').style.display = 'none'
+  document.getElementById('mf-disponibilidad').innerHTML = ''
+  document.querySelector('[name="mf-tipo"][value="clase"]').checked = true
+  document.getElementById('mf-campos-cliente').style.display = 'none'
+  document.getElementById('mf-etiqueta-label').textContent = 'Etiqueta / descripción'
+  document.getElementById('modal-fijo').style.display = 'flex'
+}
+
+function mfCalcTotal() {
+  const pph = parseInt(document.getElementById('mf-precio-hora').value) || 0
+  const dur = parseFloat(document.getElementById('mf-duracion').value) || 1
+  const prev = document.getElementById('mf-total-preview')
+  if (pph > 0) {
+    prev.style.display = 'block'
+    prev.textContent = `Total por turno: ${$(pph * dur)}${dur!==1?' ('+$(pph)+'/h × '+dur+'h)':''}`
+  } else {
+    prev.style.display = 'none'
+  }
+}
+
+function openEditModalFijo(ids) {
+  const entries = FIXED_SCHEDULES.filter(f=>ids.includes(f.id))
+  if (!entries.length) return
+  const f = entries[0]
+  editingFijoIds = ids
+  mfCanchaSeleccionada = f.cancha
+  // marcar días primero para que populateMfInicio sepa qué días están activos
+  document.querySelectorAll('#mf-dias input').forEach(cb=>cb.checked=false)
+  entries.forEach(e=>{ const cb=document.querySelector(`#mf-dias input[value="${e.dia}"]`); if(cb) cb.checked=true })
+  populateMfInicio()
+  document.getElementById('mf-inicio').value = f.horaInicio
+  document.getElementById('mf-duracion').value = String(f.duracion)
+  document.getElementById('mf-etiqueta').value = f.etiqueta||''
+  document.getElementById('mf-precio-hora').value = String(f.precio_hora||Math.round((f.monto||0)/f.duracion)||'')
+  document.getElementById('mf-tel').value = f.telefono||''
+  document.querySelector(`[name="mf-tipo"][value="${f.tipo||'clase'}"]`).checked = true
+  mfTipoChange()
+  mfCalcTotal()
+  // mostrar cancha seleccionada
+  mfCanchaSeleccionada = f.cancha
+  const diasNom = entries.map(e=>DIAS_NOMBRE[parseInt(e.dia)].slice(0,3)).join(', ')
+  const durLbl = f.duracion===1?'1h':f.duracion===1.5?'1½h':f.duracion===2?'2h':f.duracion===2.5?'2½h':'3h'
+  document.getElementById('mf-disponibilidad').innerHTML = `
+    <div style="font-size:11px;font-weight:700;color:var(--texto-dim);text-transform:uppercase;letter-spacing:.07em;margin-bottom:8px">Cancha actual — podés cambiarla</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      ${CANCHAS.map(ca=>`<button onclick="mfSelCancha('${ca}',this)" style="padding:9px 18px;background:${ca===f.cancha?'var(--naranja)':'var(--azul-dark)'};border:1px solid ${ca===f.cancha?'var(--naranja)':'var(--borde-2)'};border-radius:8px;color:#fff;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer" ${ca===f.cancha?'class="mf-sel"':''}>${ca}</button>`).join('')}
+    </div>`
+  document.getElementById('mf-resumen').textContent = `${f.cancha} · ${diasNom} · ${f.horaInicio}hs · ${durLbl}`
+  document.getElementById('mf-paso2').style.display = 'block'
+  document.getElementById('btn-guardar-fijo').style.display = 'inline-flex'
+  document.getElementById('modal-fijo').style.display = 'flex'
+}
+
+function closeModalFijo() { document.getElementById('modal-fijo').style.display = 'none' }
+
+function mfResetCancha() {
+  mfCanchaSeleccionada = null
+  document.getElementById('mf-paso2').style.display = 'none'
+  document.getElementById('btn-guardar-fijo').style.display = 'none'
+  document.getElementById('mf-disponibilidad').innerHTML = ''
+}
+
+function mfVerCanchas() {
+  const dias     = [...document.querySelectorAll('#mf-dias input:checked')].map(cb=>cb.value)
+  const hora     = document.getElementById('mf-inicio').value
+  const duracion = parseFloat(document.getElementById('mf-duracion').value)
+  if (!dias.length) { alert('Seleccioná al menos un día'); return }
+
+  const sStart = toMinsDay(hora), sEnd = sStart + duracion * 60
+  const libres = CANCHAS.filter(ca => {
+    return !dias.some(dia =>
+      FIXED_SCHEDULES.some(f => {
+        if (f.cancha!==ca||parseInt(f.dia)!==parseInt(dia)) return false
+        if (f.fechaFin && f.fechaFin < hoyStr()) return false
+        const fS=toMinsDay(f.horaInicio), fE=fS+f.duracion*60
+        return sStart<fE && sEnd>fS
+      })
+    )
+  })
+
+  mfCanchaSeleccionada = null
+  document.getElementById('mf-paso2').style.display = 'none'
+  document.getElementById('btn-guardar-fijo').style.display = 'none'
+
+  if (!libres.length) {
+    document.getElementById('mf-disponibilidad').innerHTML = `<div style="background:var(--rojo-dim);border:1px solid rgba(239,68,68,.25);border-radius:8px;padding:10px 14px;font-size:13px;font-weight:600;color:var(--rojo)">Sin canchas disponibles para esos días y horario</div>`
+    return
+  }
+  document.getElementById('mf-disponibilidad').innerHTML = `
+    <div style="font-size:11px;font-weight:700;color:var(--texto-dim);text-transform:uppercase;letter-spacing:.07em;margin-bottom:8px">${libres.length} cancha${libres.length>1?'s':''} disponible${libres.length>1?'s':''} · elegí una</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      ${libres.map(ca=>`<button onclick="mfSelCancha('${ca}',this)" style="padding:9px 18px;background:var(--azul-dark);border:1px solid var(--borde-2);border-radius:8px;color:var(--blanco);font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;transition:all .15s" onmouseover="this.style.borderColor='var(--naranja)'" onmouseout="if(!this.classList.contains('mf-sel'))this.style.borderColor='var(--borde-2)'">${ca}</button>`).join('')}
+    </div>`
+}
+
+function mfSelCancha(ca, btn) {
+  mfCanchaSeleccionada = ca
+  document.querySelectorAll('#mf-disponibilidad button').forEach(b=>{b.style.background='var(--azul-dark)';b.style.borderColor='var(--borde-2)';b.classList.remove('mf-sel')})
+  btn.style.background='var(--naranja)';btn.style.borderColor='var(--naranja)';btn.classList.add('mf-sel')
+
+  const dias  = [...document.querySelectorAll('#mf-dias input:checked')].map(cb=>cb.value)
+  const hora  = document.getElementById('mf-inicio').value
+  const dur   = parseFloat(document.getElementById('mf-duracion').value)
+  const durLbl= dur===1?'1h':dur===1.5?'1½h':dur===2?'2h':dur===2.5?'2½h':'3h'
+  const diasNom = dias.sort((a,b)=>(parseInt(a)||7)-(parseInt(b)||7)).map(d=>DIAS_NOMBRE[parseInt(d)].slice(0,3)).join(', ')
+  document.getElementById('mf-resumen').textContent = `${ca} · ${diasNom} · ${hora}hs · ${durLbl}`
+  document.getElementById('mf-paso2').style.display = 'block'
+  document.getElementById('btn-guardar-fijo').style.display = 'inline-flex'
+}
+
+function mfTipoChange() {
+  const tipo = document.querySelector('[name="mf-tipo"]:checked').value
+  document.getElementById('mf-campos-cliente').style.display = tipo==='cliente' ? 'block' : 'none'
+  document.getElementById('mf-etiqueta-label').textContent = tipo==='cliente' ? 'Nombre del cliente' : 'Etiqueta / descripción'
+  document.getElementById('mf-etiqueta').placeholder = tipo==='cliente' ? 'Ej: Juan García' : 'Ej: Clases adultos, Entrenamiento 5ta'
+}
+
+function acBuscarFijo() {
+  const drop = document.getElementById('mf-ac-drop')
+  const q = (document.getElementById('mf-tel').value||'').replace(/\D/g,'')
+  if (q.length < 3) { drop.style.display='none'; return }
+  const vistos = new Map()
+  RESERVAS.forEach(r => {
+    if (r.estado==='cancelada') return
+    const tel = (r.telefono||'').replace(/\D/g,'')
+    if (!tel||!tel.includes(q)) return
+    if (!vistos.has(tel)) vistos.set(tel,{nombre:r.cliente,tel:r.telefono})
+  })
+  const matches = [...vistos.values()].slice(0,5)
+  if (!matches.length) { drop.style.display='none'; return }
+  drop.innerHTML = matches.map(c=>`
+    <div class="ac-item" onclick="mfAcSelect('${c.nombre.replace(/'/g,"\\'")}','${c.tel}')">
+      <strong>${c.nombre}</strong><span>${c.tel}</span>
+    </div>`).join('')
+  drop.style.display = 'block'
+}
+
+function mfAcSelect(nombre, tel) {
+  document.getElementById('mf-etiqueta').value = nombre
+  document.getElementById('mf-tel').value = tel
+  document.getElementById('mf-ac-drop').style.display = 'none'
+}
+
+function saveHorarioFijo() {
+  if (!mfCanchaSeleccionada) { alert('Seleccioná una cancha'); return }
+  const dias       = [...document.querySelectorAll('#mf-dias input:checked')].map(cb=>cb.value)
+  const hora       = document.getElementById('mf-inicio').value
+  const duracion   = parseFloat(document.getElementById('mf-duracion').value)
+  const etiqueta   = document.getElementById('mf-etiqueta').value.trim() || 'Fijo'
+  const tipo       = document.querySelector('[name="mf-tipo"]:checked').value
+  const telefono   = tipo==='cliente' ? (document.getElementById('mf-tel').value.trim()||'') : ''
+  const precio_hora = parseInt(document.getElementById('mf-precio-hora').value) || 0
+
+  if (!dias.length) { alert('Seleccioná al menos un día'); return }
+
+  // Validar conflictos con otros fijos activos en la misma cancha
+  const sStart = toMinsDay(hora)
+  const sEnd   = sStart + duracion * 60
+  const hoyS   = hoyStr()
+  const activos = FIXED_SCHEDULES.filter(f =>
+    (!f.fechaFin || f.fechaFin >= hoyS) &&
+    !(editingFijoIds && editingFijoIds.includes(f.id))
+  )
+  const conflictos = []
+  dias.forEach(dia => {
+    activos.forEach(f => {
+      if (f.cancha !== mfCanchaSeleccionada || parseInt(f.dia) !== parseInt(dia)) return
+      const fS = toMinsDay(f.horaInicio), fE = fS + f.duracion * 60
+      if (sStart < fE && sEnd > fS) conflictos.push(`${['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'][parseInt(dia)]} ${hora} — ya existe "${f.etiqueta}"`)
+    })
+  })
+  if (conflictos.length) {
+    alert('Conflicto de horario:\n' + conflictos.join('\n'))
+    return
+  }
+
+  // Calcular fechaInicio según si hoy es uno de los días y si el slot ya pasó
+  const _ahora      = new Date()
+  const _diaHoy     = _ahora.getDay()
+  const _nowReal    = _ahora.getHours() * 60 + _ahora.getMinutes()
+  const _sloReal    = parseInt(hora.split(':')[0]) * 60 + parseInt(hora.split(':')[1] || 0)
+  const _hoyEsDia   = dias.some(d => parseInt(d) === _diaHoy)
+  const _manana     = (() => { const d=new Date(_ahora); d.setDate(d.getDate()+1); return d.toISOString().split('T')[0] })()
+
+  let fechaInicio
+  if (!editingFijoIds && _hoyEsDia && _sloReal > _nowReal) {
+    // Solo al crear nuevo: el slot de hoy todavía no pasó — preguntar si empieza hoy
+    const diasNomCorto = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb']
+    const fechaHoyFmt  = `${String(_ahora.getDate()).padStart(2,'0')}/${String(_ahora.getMonth()+1).padStart(2,'0')}/${_ahora.getFullYear()}`
+    const empiezaHoy   = confirm(
+      `El ${diasNomCorto[_diaHoy]} ${fechaHoyFmt} a las ${hora} ya entra dentro de este horario fijo.\n\n¿El turno de HOY ya está pactado y se cobra?\n\nAceptar → el turno de hoy queda incluido\nCancelar → empieza desde mañana (el turno de hoy no cuenta)`
+    )
+    fechaInicio = empiezaHoy ? hoyStr() : _manana
+  } else if (!editingFijoIds && _hoyEsDia && _sloReal <= _nowReal) {
+    // Solo al crear nuevo: el slot de hoy ya pasó → empezar mañana
+    fechaInicio = _manana
+  } else {
+    // Al editar, o si hoy no es uno de los días → mantener fechaInicio original o hoyStr()
+    fechaInicio = editingFijoIds
+      ? (FIXED_SCHEDULES.find(f => editingFijoIds.includes(f.id))?.fechaInicio || hoyStr())
+      : hoyStr()
+  }
+
+  const nuevasEntradas = dias.map(dia => ({
+    id: (typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : Date.now().toString()+dia),
+    cancha: mfCanchaSeleccionada, dia, horaInicio: hora, duracion,
+    etiqueta, tipo, telefono, precio_hora, fechaInicio
+  }))
+
+  if (isDemoMode) {
+    // Si editando, eliminar viejos primero
+    if (editingFijoIds) { FIXED_SCHEDULES = FIXED_SCHEDULES.filter(f=>!editingFijoIds.includes(f.id)); editingFijoIds = null }
+    nuevasEntradas.forEach(e => FIXED_SCHEDULES.push(e))
+    localStorage.setItem('bp_fixed_schedules', JSON.stringify(FIXED_SCHEDULES))
+    closeModalFijo(); renderHorariosFijos(); renderHoy()
+  } else {
+    // Modo real: Supabase
+    ;(async () => {
+      if (editingFijoIds) {
+        await sbClient.from('horarios_fijos').delete().in('id', editingFijoIds)
+        editingFijoIds = null
+      }
+      const rows = nuevasEntradas.map(_fijaToDB)
+      const { error } = await sbClient.from('horarios_fijos').insert(rows)
+      if (error) { alert('Error al guardar: ' + error.message); return }
+      await cargarFijos()
+      closeModalFijo(); renderHorariosFijos(); renderHoy()
+    })()
+    return  // WA se envía dentro del async, caemos al bloque de abajo igual
+  }
+
+  // WA solo para clientes fijos con teléfono
+  if (tipo === 'cliente' && telefono) {
+    const dur = duracion
+    const durLbl = dur===1?'1 hora':dur===1.5?'1 hora y media':dur===2?'2 horas':dur===2.5?'2 horas y media':'3 horas'
+    const diasNom = dias.sort((a,b)=>(parseInt(a)||7)-(parseInt(b)||7)).map(d=>['Domingo','Lunes','Martes','Miercoles','Jueves','Viernes','Sabado'][parseInt(d)]).join(', ')
+    let msg = `Hola ${etiqueta}, tu turno fijo en Break Point Padel ha sido registrado.\n\n`
+    msg += `Dias: ${diasNom}\n`
+    msg += `Hora: ${hora}hs (${durLbl})\n`
+    msg += `${mfCanchaSeleccionada}\n`
+    if (precio_hora > 0) msg += `Valor por turno: $${Math.round(precio_hora*duracion).toLocaleString('es-AR')}\n`
+    msg += `\nNos vemos en la cancha!`
+    abrirWAOverlay(etiqueta, msg, telefono)
+  }
+}
+
+function abrirWAOverlay(nombre, msg, telefono) {
+  const telLimpio = (telefono||'').replace(/\D/g,'')
+  document.getElementById('wa-fijo-nombre').textContent = nombre
+  document.getElementById('wa-fijo-msg-preview').textContent = msg
+  const btn = document.getElementById('wa-fijo-btn')
+  if (telLimpio) {
+    const waUrl = `https://wa.me/54${telLimpio}?text=${encodeURIComponent(msg)}`
+    btn.style.display = 'inline-flex'
+    btn.onclick = () => { window.open(waUrl, '_blank'); cerrarWAFijo() }
+  } else {
+    btn.style.display = 'none'
+  }
+  const ov = document.getElementById('overlay-wa-fijo')
+  ov.style.display = 'flex'
+}
+
+function cerrarWAFijo() {
+  document.getElementById('overlay-wa-fijo').style.display = 'none'
+}
+
+function eliminarGrupoFijo(ids) {
+  if (!confirm('¿Eliminar este horario fijo?\nLas ocurrencias de hoy y anteriores quedarán en los reportes históricos.')) return
+  const hoy = hoyStr()
+  if (isDemoMode) {
+    FIXED_SCHEDULES = FIXED_SCHEDULES.map(f => ids.includes(f.id) ? {...f, fechaFin: hoy} : f)
+    localStorage.setItem('bp_fixed_schedules', JSON.stringify(FIXED_SCHEDULES))
+    renderHorariosFijos(); renderHoy()
+  } else {
+    sbClient.from('horarios_fijos').update({ fecha_fin: hoy }).in('id', ids)
+      .then(({ error }) => {
+        if (error) { alert('Error al eliminar: ' + error.message); return }
+        FIXED_SCHEDULES = FIXED_SCHEDULES.map(f => ids.includes(f.id) ? {...f, fechaFin: hoy} : f)
+        renderHorariosFijos(); renderHoy()
+      })
+  }
+}
+
+/* ══════════════════════════════════════
+   INIT
+   ══════════════════════════════════════ */
+document.getElementById('l-pass').addEventListener('keydown', e=>{ if(e.key==='Enter') doLogin() })
+document.getElementById('modal').addEventListener('click', e=>{ if(e.target===e.currentTarget) closeModal() })
+document.addEventListener('click', e=>{ if(!e.target.closest('.ac-wrap')) document.getElementById('ac-drop').style.display='none' })
+document.getElementById('modal-fijo').addEventListener('click', e=>{ if(e.target===e.currentTarget) closeModalFijo() })
+
+// Actualizar fecha del subtítulo cada vez que la ventana recibe el foco (por si pasó la medianoche o el usuario volvió)
+function actualizarFechaHoy() {
+  const tb = document.getElementById('tb-date')
+  if (!tb) return
+  const h = new Date()
+  tb.textContent = `${DIAS_ES[h.getDay()]}, ${h.getDate()} de ${MESES[h.getMonth()]} de ${h.getFullYear()}`
+}
+window.addEventListener('focus', actualizarFechaHoy)
+// También actualizar cada minuto por si quedó abierta de un día para el otro
+setInterval(actualizarFechaHoy, 60000)
+
+/* ══════════════════════════════════════
+   MENÚ DEL KIOSCO
+   ══════════════════════════════════════ */
+let MENU_ITEMS = []
+
+const MENU_CATS_DEF = [
+  { id:'hamburguesas', nombre:'Hamburguesas & Sándwiches', color:null,
+    svg:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11 Q3 6 12 6 Q21 6 21 11"/><rect x="2" y="11" width="20" height="3" rx="1"/><path d="M3 14v1a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-1"/></svg>' },
+  { id:'milanesas', nombre:'Milanesas & Carnes', color:null,
+    svg:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8a6 6 0 0 0-6-6 6 6 0 0 0-6 6c0 7 6 13 6 13s6-6 6-13Z"/></svg>' },
+  { id:'pastas', nombre:'Pastas', color:null,
+    svg:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 15a4 4 0 0 0 4 4h10a4 4 0 0 0 4-4"/><path d="M3 15c0-4.4 8-8 9-12"/><path d="M21 15c0-4.4-8-8-9-12"/></svg>' },
+  { id:'pizzas', nombre:'Pizzas', color:null,
+    svg:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 20h20L12 2Z"/><path d="M12 2v18"/></svg>' },
+  { id:'healthy', nombre:'Menú Healthy', color:'#2d6a2d',
+    svg:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>' },
+  { id:'cafeteria', nombre:'Cafetería', color:null,
+    svg:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8Z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>' },
+  { id:'alcohol', nombre:'Bebidas c/ Alcohol', color:null,
+    svg:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 22h8"/><path d="M12 11v11"/><path d="M17 2H7l5 9 5-9Z"/></svg>' },
+  { id:'sin-alcohol', nombre:'Bebidas Sin Alcohol', color:null,
+    svg:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 2h8l1 8H7L8 2Z"/><path d="M7 10c0 5 2 8 5 10 3-2 5-5 5-10"/></svg>' },
+]
+
+async function cargarMenu() {
+  if (isDemoMode) { MENU_ITEMS = []; return }
+  const { data, error } = await sbClient.from('menu_items').select('*').order('orden')
+  if (error) { console.error('Error cargando menú:', error); return }
+  MENU_ITEMS = data || []
+}
+
+function renderMenuAdmin() {
+  const grid = document.getElementById('menu-admin-grid')
+  if (!grid) return
+  if (!MENU_ITEMS.length && !isDemoMode) {
+    grid.innerHTML = '<div style="color:var(--texto-dim);font-size:13px;padding:20px 0">No hay ítems en el menú. Ejecutá el SQL de inicialización en Supabase.</div>'
+    return
+  }
+  grid.innerHTML = MENU_CATS_DEF.map(cat => {
+    const items = MENU_ITEMS.filter(i => i.categoria === cat.id)
+    const headBg = cat.color || 'var(--azul-mid,#1a3a6b)'
+    const rows = items.map(item => `
+      <div class="menu-admin-row${item.activo ? '' : ' inactivo'}" data-id="${item.id}">
+        <div style="flex:1;min-width:0">
+          <div class="menu-admin-name">${item.nombre}</div>
+          ${item.nota ? `<div class="menu-admin-nota">${item.nota}</div>` : ''}
+        </div>
+        <button class="menu-toggle ${item.activo ? 'on' : 'off'}" title="${item.activo ? 'Desactivar' : 'Activar'}"
+          onclick="toggleMenuItem(${item.id},${!item.activo})"></button>
+        <button class="menu-del-btn" title="Eliminar" onclick="deleteMenuItem(${item.id},'${item.nombre.replace(/'/g,"\\'")}')">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>`).join('')
+    return `
+      <div class="menu-admin-cat">
+        <div class="menu-admin-cat-head" style="background:${headBg}">
+          ${cat.svg}<span>${cat.nombre}</span>
+        </div>
+        <div class="menu-admin-items">
+          ${rows || '<div style="padding:10px 14px;font-size:12px;color:var(--texto-dim)">Sin ítems</div>'}
+        </div>
+        <div class="menu-add-row">
+          <input class="menu-add-inp" id="inp-${cat.id}" placeholder="Nuevo plato..." onkeydown="if(event.key==='Enter')addMenuItem('${cat.id}')">
+          <button class="menu-add-btn" onclick="addMenuItem('${cat.id}')">+ Agregar</button>
+        </div>
+      </div>`
+  }).join('')
+}
+
+async function toggleMenuItem(id, activo) {
+  if (isDemoMode) return
+  const { error } = await sbClient.from('menu_items').update({ activo }).eq('id', id)
+  if (error) { alert('Error: ' + error.message); return }
+  const item = MENU_ITEMS.find(i => i.id === id)
+  if (item) item.activo = activo
+  renderMenuAdmin()
+}
+
+async function deleteMenuItem(id, nombre) {
+  if (!confirm(`¿Eliminar "${nombre}" del menú?`)) return
+  if (isDemoMode) { MENU_ITEMS = MENU_ITEMS.filter(i => i.id !== id); renderMenuAdmin(); return }
+  const { error } = await sbClient.from('menu_items').delete().eq('id', id)
+  if (error) { alert('Error: ' + error.message); return }
+  MENU_ITEMS = MENU_ITEMS.filter(i => i.id !== id)
+  renderMenuAdmin()
+}
+
+async function addMenuItem(catId) {
+  const inp = document.getElementById('inp-' + catId)
+  const nombre = inp?.value.trim()
+  if (!nombre) return
+  const orden = MENU_ITEMS.filter(i => i.categoria === catId).length + 1
+  if (isDemoMode) {
+    MENU_ITEMS.push({ id: Date.now(), categoria: catId, nombre, nota: null, activo: true, orden })
+    renderMenuAdmin()
+    return
+  }
+  const { data, error } = await sbClient.from('menu_items')
+    .insert({ categoria: catId, nombre, activo: true, orden })
+    .select().single()
+  if (error) { alert('Error: ' + error.message); return }
+  MENU_ITEMS.push(data)
+  renderMenuAdmin()
+}
+</script>
+</body>
+</html>
