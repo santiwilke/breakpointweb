@@ -1634,7 +1634,9 @@ function _renderGrid() {
   const isToday = bk.fecha === todayStr;
   const now = new Date();
   const nowRaw = now.getHours() + now.getMinutes() / 60;
-  const nowVal = nowRaw < 8 ? nowRaw + 24 : nowRaw; // extender post-medianoche
+  const realToday = now.toISOString().split('T')[0];
+  // Extender solo si estamos viendo el día anterior en jornada nocturna cruzada
+  const nowVal = (nowRaw < 8 && bk.fecha !== realToday) ? nowRaw + 24 : nowRaw;
   const slots = getNumericSlots(bk.fecha);
 
   grid.innerHTML = '';
@@ -1805,15 +1807,16 @@ async function loadDisp() {
   let sheetData = null;
   try { sheetData = await fetchSheetData(fecha); } catch {}
 
-  const nowVal = new Date().getHours() + new Date().getMinutes() / 60;
+  const _now = new Date();
+  const nowRaw = _now.getHours() + _now.getMinutes() / 60;
+  const realToday = _now.toISOString().split('T')[0];
   const isToday = fecha === todayStr;
-  // Usamos slots numéricos para comparar correctamente (00:00 = hora 24, no 0)
+  // Extender solo si estamos viendo el día anterior en jornada nocturna cruzada
+  const nowExtended = (nowRaw < 8 && fecha !== realToday) ? nowRaw + 24 : nowRaw;
   const numSlots = getNumericSlots(fecha);
   const horas = numSlots.map(fmtSlot);
 
   dhead.innerHTML = '<th>Cancha</th>' + horas.map(h => `<th>${h}</th>`).join('');
-
-  const nowExtended = nowVal < 8 ? nowVal + 24 : nowVal;
 
   tbody.innerHTML = [1,2,3,4].map(c => {
     const cells = numSlots.map((numH, i) => {
