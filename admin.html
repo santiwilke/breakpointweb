@@ -711,7 +711,7 @@
       <div class="row2" style="margin-bottom:12px">
         <div class="fgsm ac-wrap">
           <label>Teléfono</label>
-          <input type="text" id="m-tel" placeholder="11-3456-7890" oninput="formatTel(this);acBuscar()" autocomplete="off" maxlength="12">
+          <input type="text" id="m-tel" value="11-" placeholder="11-3456-7890" oninput="formatTel(this);acBuscar()" onkeydown="telKeydown(event)" autocomplete="off" maxlength="12">
           <div id="ac-drop" class="ac-drop" style="display:none"></div>
         </div>
         <div class="fgsm"><label>Nombre</label><input type="text" id="m-cli" placeholder="Juan Pérez" oninput="acBuscar()" autocomplete="off"></div>
@@ -836,7 +836,7 @@
       <div id="mf-campos-cliente" style="display:none;margin-bottom:12px">
         <div class="fgsm" style="position:relative">
           <label>Teléfono</label>
-          <input type="text" id="mf-tel" placeholder="11-3456-7890" oninput="formatTel(this);acBuscarFijo()" autocomplete="off" maxlength="12">
+          <input type="text" id="mf-tel" value="11-" placeholder="11-3456-7890" oninput="formatTel(this);acBuscarFijo()" onkeydown="telKeydown(event)" autocomplete="off" maxlength="12">
           <div id="mf-ac-drop" style="display:none;position:absolute;left:0;right:0;top:100%;z-index:200;background:var(--azul-mid);border:1px solid var(--borde-2);border-radius:9px;overflow:hidden;box-shadow:0 8px 24px rgba(0,0,0,.4)"></div>
         </div>
       </div>
@@ -1089,9 +1089,14 @@ function hoyStr() { return new Date().toISOString().split('T')[0] }
 // Jornada comercial: antes de las 08:00 la jornada activa es la del día anterior
 function businessDateStr() {
   const now = new Date()
-  if (now.getHours() < 8) {
-    const ayer = new Date(now); ayer.setDate(ayer.getDate() - 1)
-    return ayer.toISOString().split('T')[0]
+  const h = now.getHours()
+  if (h < 8) {
+    const nowExt = h + now.getMinutes() / 60 + 24
+    if (nowExt < 25) { // antes de la 01:00 — todavía dentro de la jornada anterior
+      const ayer = new Date(now); ayer.setDate(ayer.getDate() - 1)
+      return ayer.toISOString().split('T')[0]
+    }
+    // 01:00 AM o más tarde — último slot ya pasó, usar día real
   }
   return now.toISOString().split('T')[0]
 }
@@ -1984,7 +1989,7 @@ function openModal() {
   populateHoraSelect('m-hora', true)
   document.getElementById('m-duracion').value = '1'
   document.getElementById('m-cli').value = ''
-  document.getElementById('m-tel').value = ''
+  document.getElementById('m-tel').value = '11-'
   document.getElementById('m-monto').value = '50000'
   document.getElementById('m-sena').value = ''
   document.getElementById('m-saldo-preview').style.display = 'none'
@@ -2775,12 +2780,21 @@ function actualizarFechaHoy() {
 }
 function formatTel(inp) {
   let d = inp.value.replace(/\D/g, '')
-  if (d.length > 0 && !d.startsWith('11')) d = '11' + d
+  if (!d.startsWith('11')) d = '11' + d.replace(/^1?/, '')
   d = d.slice(0, 10)
-  let fmt = d
-  if (d.length > 6)      fmt = d.slice(0,2) + '-' + d.slice(2,6) + '-' + d.slice(6)
-  else if (d.length > 2) fmt = d.slice(0,2) + '-' + d.slice(2)
+  let fmt = d.length > 6 ? d.slice(0,2)+'-'+d.slice(2,6)+'-'+d.slice(6)
+           : d.length > 2 ? d.slice(0,2)+'-'+d.slice(2)
+           : '11-'
   inp.value = fmt
+}
+function telKeydown(e) {
+  const inp = e.target
+  const PREFIX = '11-'
+  // Impedir borrar el prefijo "11-"
+  if ((e.key === 'Backspace' || e.key === 'Delete') && inp.value.length <= PREFIX.length) {
+    e.preventDefault()
+    inp.value = PREFIX
+  }
 }
 
 window.addEventListener('focus', actualizarFechaHoy)
