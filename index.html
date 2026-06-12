@@ -1627,7 +1627,8 @@ function _renderGrid() {
   const dur = bk.duracion || 1;
   const isToday = bk.fecha === todayStr;
   const now = new Date();
-  const nowVal = now.getHours() + now.getMinutes() / 60;
+  const nowRaw = now.getHours() + now.getMinutes() / 60;
+  const nowVal = nowRaw < 8 ? nowRaw + 24 : nowRaw; // extender post-medianoche
   const slots = getNumericSlots(bk.fecha);
 
   grid.innerHTML = '';
