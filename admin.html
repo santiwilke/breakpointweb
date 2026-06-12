@@ -1169,8 +1169,14 @@ function populateHoraSelect(selId, filterPast) {
 
   if (filterPast && fecha === biz) {
     const now = new Date()
-    const nowExt = toMinsDay(String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0'))
-    opciones = opciones.filter(h => toMinsDay(h) > nowExt)
+    const h = now.getHours(), m = now.getMinutes()
+    const realToday = now.toISOString().split('T')[0]
+    // Si estamos en madrugada viendo el día REAL de hoy (no el día anterior de jornada nocturna),
+    // usar tiempo sin extender para no tachar slots futuros como 08:00
+    const nowExt = (h < 8 && fecha !== realToday)
+      ? toMinsDay(String(h).padStart(2,'0')+':'+String(m).padStart(2,'0'))
+      : h * 60 + m
+    opciones = opciones.filter(slot => toMinsDay(slot) > nowExt)
   }
 
   sel.innerHTML = opciones.map(h=>`<option value="${h}">${h}</option>`).join('')
