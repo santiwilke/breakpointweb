@@ -1292,7 +1292,7 @@ function enterApp() {
   const hoy = new Date()
   document.getElementById('tb-date').textContent =
     `${DIAS_ES[hoy.getDay()]}, ${hoy.getDate()} de ${MESES[hoy.getMonth()]} de ${hoy.getFullYear()}`
-  Promise.all([cargarReservas(), cargarFijos(), cargarMenu(), cargarPromociones()]).then(() => { initGrillaDia(); navigate('hoy') })
+  Promise.all([cargarReservas(), cargarFijos(), cargarMenu(), cargarPromociones().catch(()=>{})]).then(() => { initGrillaDia(); navigate('hoy') })
 }
 
 async function cargarReservas() {
@@ -3041,4 +3041,498 @@ function saveHorarioFijo() {
   if (tipo === 'cliente' && telefono) {
     const dur = duracion
     const durLbl = dur===1?'1 hora':dur===1.5?'1 hora y media':dur===2?'2 horas':dur===2.5?'2 horas y media':'3 horas'
-    const diasNom = dias.sort((a,b)=>(parseInt
+    const diasNom = dias.sort((a,b)=>(parseInt(a)||7)-(parseInt(b)||7)).map(d=>['Domingo','Lunes','Martes','Miercoles','Jueves','Viernes','Sabado'][parseInt(d)]).join(', ')
+    let msg = `Hola ${etiqueta}, tu turno fijo en Break Point Padel ha sido registrado.\n\n`
+    msg += `Dias: ${diasNom}\n`
+    msg += `Hora: ${hora}hs (${durLbl})\n`
+    msg += `${mfCanchaSeleccionada}\n`
+    if (precio_hora > 0) msg += `Valor por turno: $${Math.round(precio_hora*duracion).toLocaleString('es-AR')}\n`
+    msg += `\nNos vemos en la cancha!`
+    abrirWAOverlay(etiqueta, msg, telefono)
+  }
+}
+
+function abrirWAOverlay(nombre, msg, telefono) {
+  const telLimpio = (telefono||'').replace(/\D/g,'')
+  document.getElementById('wa-fijo-nombre').textContent = nombre
+  document.getElementById('wa-fijo-msg-preview').textContent = msg
+  const btn = document.getElementById('wa-fijo-btn')
+  if (telLimpio) {
+    const waUrl = `https://wa.me/54${telLimpio}?text=${encodeURIComponent(msg)}`
+    btn.style.display = 'inline-flex'
+    btn.onclick = () => { window.open(waUrl, '_blank'); cerrarWAFijo() }
+  } else {
+    btn.style.display = 'none'
+  }
+  const ov = document.getElementById('overlay-wa-fijo')
+  ov.style.display = 'flex'
+}
+
+function cerrarWAFijo() {
+  document.getElementById('overlay-wa-fijo').style.display = 'none'
+}
+
+function eliminarGrupoFijo(ids) {
+  if (!confirm('¿Eliminar este horario fijo?\nLas ocurrencias de hoy y anteriores quedarán en los reportes históricos.')) return
+  const hoy = hoyStr()
+  if (isDemoMode) {
+    FIXED_SCHEDULES = FIXED_SCHEDULES.map(f => ids.includes(f.id) ? {...f, fechaFin: hoy} : f)
+    localStorage.setItem('bp_fixed_schedules', JSON.stringify(FIXED_SCHEDULES))
+    renderHorariosFijos(); renderHoy()
+  } else {
+    sbClient.from('horarios_fijos').update({ fecha_fin: hoy }).in('id', ids)
+      .then(({ error }) => {
+        if (error) { alert('Error al eliminar: ' + error.message); return }
+        FIXED_SCHEDULES = FIXED_SCHEDULES.map(f => ids.includes(f.id) ? {...f, fechaFin: hoy} : f)
+        renderHorariosFijos(); renderHoy()
+      })
+  }
+}
+
+/* ══════════════════════════════════════
+   INIT
+   ══════════════════════════════════════ */
+document.getElementById('l-pass').addEventListener('keydown', e=>{ if(e.key==='Enter') doLogin() })
+document.getElementById('modal').addEventListener('click', e=>{ if(e.target===e.currentTarget) closeModal() })
+document.addEventListener('click', e=>{ if(!e.target.closest('.ac-wrap')) document.getElementById('ac-drop').style.display='none' })
+document.getElementById('modal-fijo').addEventListener('click', e=>{ if(e.target===e.currentTarget) closeModalFijo() })
+
+// Actualizar fecha del subtítulo cada vez que la ventana recibe el foco (por si pasó la medianoche o el usuario volvió)
+function actualizarFechaHoy() {
+  const tb = document.getElementById('tb-date')
+  if (!tb) return
+  const h = new Date()
+  tb.textContent = `${DIAS_ES[h.getDay()]}, ${h.getDate()} de ${MESES[h.getMonth()]} de ${h.getFullYear()}`
+}
+function formatTel(inp) {
+  let d = inp.value.replace(/\D/g, '')
+  if (!d.startsWith('11')) d = '11' + d.replace(/^1?/, '')
+  d = d.slice(0, 10)
+  let fmt = d.length > 6 ? d.slice(0,2)+'-'+d.slice(2,6)+'-'+d.slice(6)
+           : d.length > 2 ? d.slice(0,2)+'-'+d.slice(2)
+           : '11-'
+  inp.value = fmt
+}
+function telKeydown(e) {
+  const inp = e.target
+  const PREFIX = '11-'
+  // Impedir borrar el prefijo "11-"
+  if ((e.key === 'Backspace' || e.key === 'Delete') && inp.value.length <= PREFIX.length) {
+    e.preventDefault()
+    inp.value = PREFIX
+  }
+}
+
+window.addEventListener('focus', actualizarFechaHoy)
+// También actualizar cada minuto por si quedó abierta de un día para el otro
+setInterval(actualizarFechaHoy, 60000)
+
+/* ══════════════════════════════════════
+   MENÚ DEL KIOSCO
+   ══════════════════════════════════════ */
+let MENU_ITEMS = []
+
+const MENU_CATS_DEF = [
+  { id:'hamburguesas', nombre:'Hamburguesas & Sándwiches', color:null,
+    svg:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11 Q3 6 12 6 Q21 6 21 11"/><rect x="2" y="11" width="20" height="3" rx="1"/><path d="M3 14v1a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-1"/></svg>' },
+  { id:'milanesas', nombre:'Milanesas & Carnes', color:null,
+    svg:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8a6 6 0 0 0-6-6 6 6 0 0 0-6 6c0 7 6 13 6 13s6-6 6-13Z"/></svg>' },
+  { id:'pastas', nombre:'Pastas', color:null,
+    svg:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 15a4 4 0 0 0 4 4h10a4 4 0 0 0 4-4"/><path d="M3 15c0-4.4 8-8 9-12"/><path d="M21 15c0-4.4-8-8-9-12"/></svg>' },
+  { id:'pizzas', nombre:'Pizzas', color:null,
+    svg:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 20h20L12 2Z"/><path d="M12 2v18"/></svg>' },
+  { id:'healthy', nombre:'Menú Healthy', color:'#2d6a2d',
+    svg:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>' },
+  { id:'cafeteria', nombre:'Cafetería', color:null,
+    svg:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8Z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>' },
+  { id:'alcohol', nombre:'Bebidas c/ Alcohol', color:null,
+    svg:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 22h8"/><path d="M12 11v11"/><path d="M17 2H7l5 9 5-9Z"/></svg>' },
+  { id:'sin-alcohol', nombre:'Bebidas Sin Alcohol', color:null,
+    svg:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 2h8l1 8H7L8 2Z"/><path d="M7 10c0 5 2 8 5 10 3-2 5-5 5-10"/></svg>' },
+]
+
+async function cargarMenu() {
+  if (isDemoMode) { MENU_ITEMS = []; return }
+  const { data, error } = await sbClient.from('menu_items').select('*').order('orden')
+  if (error) { console.error('Error cargando menú:', error); return }
+  MENU_ITEMS = data || []
+}
+
+function renderMenuAdmin() {
+  const grid = document.getElementById('menu-admin-grid')
+  if (!grid) return
+  if (!MENU_ITEMS.length && !isDemoMode) {
+    grid.innerHTML = '<div style="color:var(--texto-dim);font-size:13px;padding:20px 0">No hay ítems en el menú. Ejecutá el SQL de inicialización en Supabase.</div>'
+    return
+  }
+  grid.innerHTML = MENU_CATS_DEF.map(cat => {
+    const items = MENU_ITEMS.filter(i => i.categoria === cat.id)
+    const headBg = cat.color || 'var(--azul-mid,#1a3a6b)'
+    const rows = items.map(item => `
+      <div class="menu-admin-row${item.activo ? '' : ' inactivo'}" data-id="${item.id}">
+        <div style="flex:1;min-width:0">
+          <div class="menu-admin-name">${item.nombre}</div>
+          ${item.nota ? `<div class="menu-admin-nota">${item.nota}</div>` : ''}
+        </div>
+        <button class="menu-toggle ${item.activo ? 'on' : 'off'}" title="${item.activo ? 'Desactivar' : 'Activar'}"
+          onclick="toggleMenuItem(${item.id},${!item.activo})"></button>
+        <button class="menu-del-btn" title="Eliminar" onclick="deleteMenuItem(${item.id},'${item.nombre.replace(/'/g,"\\'")}')">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>`).join('')
+    return `
+      <div class="menu-admin-cat">
+        <div class="menu-admin-cat-head" style="background:${headBg}">
+          ${cat.svg}<span>${cat.nombre}</span>
+        </div>
+        <div class="menu-admin-items">
+          ${rows || '<div style="padding:10px 14px;font-size:12px;color:var(--texto-dim)">Sin ítems</div>'}
+        </div>
+        <div class="menu-add-row">
+          <input class="menu-add-inp" id="inp-${cat.id}" placeholder="Nuevo plato..." onkeydown="if(event.key==='Enter')addMenuItem('${cat.id}')">
+          <button class="menu-add-btn" onclick="addMenuItem('${cat.id}')">+ Agregar</button>
+        </div>
+      </div>`
+  }).join('')
+}
+
+async function toggleMenuItem(id, activo) {
+  if (isDemoMode) return
+  const { error } = await sbClient.from('menu_items').update({ activo }).eq('id', id)
+  if (error) { alert('Error: ' + error.message); return }
+  const item = MENU_ITEMS.find(i => i.id === id)
+  if (item) item.activo = activo
+  renderMenuAdmin()
+}
+
+async function deleteMenuItem(id, nombre) {
+  if (!confirm(`¿Eliminar "${nombre}" del menú?`)) return
+  if (isDemoMode) { MENU_ITEMS = MENU_ITEMS.filter(i => i.id !== id); renderMenuAdmin(); return }
+  const { error } = await sbClient.from('menu_items').delete().eq('id', id)
+  if (error) { alert('Error: ' + error.message); return }
+  MENU_ITEMS = MENU_ITEMS.filter(i => i.id !== id)
+  renderMenuAdmin()
+}
+
+async function addMenuItem(catId) {
+  const inp = document.getElementById('inp-' + catId)
+  const nombre = inp?.value.trim()
+  if (!nombre) return
+  const orden = MENU_ITEMS.filter(i => i.categoria === catId).length + 1
+  if (isDemoMode) {
+    MENU_ITEMS.push({ id: Date.now(), categoria: catId, nombre, nota: null, activo: true, orden })
+    renderMenuAdmin()
+    return
+  }
+  const { data, error } = await sbClient.from('menu_items')
+    .insert({ categoria: catId, nombre, activo: true, orden })
+    .select().single()
+  if (error) { alert('Error: ' + error.message); return }
+  MENU_ITEMS.push(data)
+  renderMenuAdmin()
+}
+
+/* ══════════════════════════════════════
+   PROMOCIONES
+   ══════════════════════════════════════ */
+let PROMOCIONES = []
+
+// Poblar selects de hora una sola vez al cargar
+;(function initHoraSelects() {
+  const slots = []
+  for (let h = 8; h <= 25; h++) {
+    const hh = String(h % 24).padStart(2, '0')
+    slots.push(hh + ':00')
+    if (h < 25) slots.push(hh + ':30')
+  }
+  slots.push('02:00')
+  const ini = document.getElementById('mp-hora-ini')
+  const fin = document.getElementById('mp-hora-fin')
+  if (!ini || !fin) return
+  slots.forEach(t => {
+    ini.insertAdjacentHTML('beforeend', `<option value="${t}">${t}</option>`)
+    fin.insertAdjacentHTML('beforeend', `<option value="${t}">${t}</option>`)
+  })
+})()
+
+async function cargarPromociones() {
+  if (isDemoMode) { PROMOCIONES = []; return }
+  const { data, error } = await sbClient.from('promociones').select('*').order('created_at', { ascending: false })
+  if (!error && data) PROMOCIONES = data
+}
+
+function renderPromociones() {
+  const cont = document.getElementById('promo-cont')
+  if (!cont) return
+  if (!PROMOCIONES.length) {
+    cont.innerHTML = '<div style="color:var(--texto-dim);font-size:13px">No hay promociones creadas aún. Usá las sugerencias IA o creá una con "+ Nueva promoción".</div>'
+    return
+  }
+  cont.innerHTML = `<div class="promo-grid">${PROMOCIONES.map(renderPromoCard).join('')}</div>`
+}
+
+function renderPromoCard(p) {
+  const activa = p.activa
+  const pFinal = p.precio_base && p.valor_descuento
+    ? (p.tipo_descuento === 'porcentaje' ? p.precio_base * (1 - p.valor_descuento / 100) : p.valor_descuento)
+    : null
+  const descStr = p.tipo_descuento === 'porcentaje' ? `${p.valor_descuento}% OFF` : 'Precio especial'
+  return `
+  <div class="promo-card ${activa ? '' : 'inactiva'}">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+      <span class="promo-badge ${activa ? 'activa' : 'inactiva'}">${activa ? '● Activa' : '○ Inactiva'}</span>
+      <button class="toggle-switch ${activa ? 'on' : 'off'}" onclick="togglePromoAdmin('${p.id}',${!activa})" title="${activa ? 'Desactivar' : 'Activar'}"></button>
+    </div>
+    <div class="promo-titulo">${escHtml(p.titulo)}</div>
+    ${p.descripcion ? `<div class="promo-desc">${escHtml(p.descripcion)}</div>` : ''}
+    ${p.precio_base ? `
+    <div class="promo-precio">
+      <span class="promo-precio-base">$${fmtN(p.precio_base)}</span>
+      <span class="promo-precio-final">$${fmtN(pFinal)}</span>
+      <span class="promo-precio-desc">-${descStr}</span>
+    </div>` : `<div style="font-size:12px;color:var(--naranja);font-weight:700;margin-bottom:10px">${descStr}</div>`}
+    <div class="promo-meta">
+      📅 ${formatPromoRango(p)}<br>
+      🕐 ${p.hora_inicio}${p.hora_fin ? ' – ' + p.hora_fin : ''}
+    </div>
+    <div class="promo-actions">
+      <button class="btn btn-outline" style="font-size:11px;padding:6px 12px" onclick="openModalPromo('${p.id}')">Editar</button>
+      <button class="btn btn-danger" style="font-size:11px;padding:6px 12px" onclick="eliminarPromo('${p.id}')">Eliminar</button>
+    </div>
+  </div>`
+}
+
+function formatPromoRango(p) {
+  const DA = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb']
+  if (p.tipo_dias === 'recurrente' && p.dias_semana?.length)
+    return 'Todos los ' + p.dias_semana.map(d => DA[d]).join(', ')
+  if (p.tipo_dias === 'fecha') {
+    if (p.fecha_inicio && p.fecha_fin) return `Del ${p.fecha_inicio} al ${p.fecha_fin}`
+    if (p.fecha_inicio) return `Desde ${p.fecha_inicio}`
+  }
+  return 'Sin rango definido'
+}
+
+function fmtN(n) { return Math.round(n).toLocaleString('es-AR') }
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')
+}
+
+async function togglePromoAdmin(id, activa) {
+  const { error } = await sbClient.from('promociones').update({ activa }).eq('id', id)
+  if (error) { alert('Error: ' + error.message); return }
+  const idx = PROMOCIONES.findIndex(p => p.id === id)
+  if (idx >= 0) PROMOCIONES[idx].activa = activa
+  renderPromociones()
+}
+
+async function eliminarPromo(id) {
+  if (!confirm('¿Eliminar esta promoción?')) return
+  const { error } = await sbClient.from('promociones').delete().eq('id', id)
+  if (error) { alert('Error: ' + error.message); return }
+  PROMOCIONES = PROMOCIONES.filter(p => p.id !== id)
+  renderPromociones()
+}
+
+let _editingPromoId = null
+
+function openModalPromo(id) {
+  _editingPromoId = id
+  const p = id ? PROMOCIONES.find(x => x.id === id) : null
+  document.getElementById('modal-promo-title').textContent = p ? 'Editar Promoción' : 'Nueva Promoción'
+  document.getElementById('mp-titulo').value    = p?.titulo || ''
+  document.getElementById('mp-desc').value      = p?.descripcion || ''
+  document.getElementById('mp-tipo-dias').value = p?.tipo_dias || 'recurrente'
+  document.getElementById('mp-hora-ini').value  = p?.hora_inicio || ''
+  document.getElementById('mp-hora-fin').value  = p?.hora_fin || ''
+  document.getElementById('mp-tipo-desc').value = p?.tipo_descuento || 'porcentaje'
+  document.getElementById('mp-precio-base').value  = p?.precio_base || ''
+  document.getElementById('mp-valor-desc').value   = p?.valor_descuento || ''
+  document.getElementById('mp-fecha-ini').value    = p?.fecha_inicio || ''
+  document.getElementById('mp-fecha-fin').value    = p?.fecha_fin || ''
+  const dias = p?.dias_semana || []
+  document.querySelectorAll('[name="mp-dia"]').forEach(cb => { cb.checked = dias.includes(parseInt(cb.value)) })
+  const tog = document.getElementById('mp-toggle-activa')
+  tog.className = `toggle-switch ${(p?.activa ?? true) ? 'on' : 'off'}`
+  mpToggleTipoDias()
+  mpPreviewPrecio()
+  document.getElementById('modal-promo').style.display = 'flex'
+}
+
+function closeModalPromo() {
+  document.getElementById('modal-promo').style.display = 'none'
+  _editingPromoId = null
+}
+
+function mpToggleTipoDias() {
+  const tipo = document.getElementById('mp-tipo-dias').value
+  document.getElementById('mp-dias-wrap').style.display  = tipo === 'recurrente' ? '' : 'none'
+  document.getElementById('mp-fecha-wrap').style.display = tipo === 'fecha'      ? '' : 'none'
+}
+
+function mpPreviewPrecio() {
+  const base = parseFloat(document.getElementById('mp-precio-base').value)
+  const val  = parseFloat(document.getElementById('mp-valor-desc').value)
+  const tipo = document.getElementById('mp-tipo-desc').value
+  document.getElementById('mp-desc-label').textContent = tipo === 'porcentaje' ? 'Descuento (%)' : 'Total con descuento ($)'
+  const prev = document.getElementById('mp-precio-preview')
+  if (!base || !val) { prev.style.display = 'none'; return }
+  const final  = tipo === 'porcentaje' ? base * (1 - val / 100) : val
+  const ahorro = base - final
+  prev.style.display = ''
+  document.getElementById('mp-prev-base').textContent  = `$${fmtN(base)}`
+  document.getElementById('mp-prev-desc').textContent  = tipo === 'porcentaje' ? `-${val}% (-$${fmtN(ahorro)})` : `-$${fmtN(ahorro)}`
+  document.getElementById('mp-prev-final').textContent = `$${fmtN(final)}`
+}
+
+async function savePromo() {
+  const titulo  = document.getElementById('mp-titulo').value.trim()
+  const horaIni = document.getElementById('mp-hora-ini').value.trim()
+  if (!titulo)  { alert('El título es obligatorio'); return }
+  if (!horaIni) { alert('La hora de inicio es obligatoria'); return }
+  const tipoDias    = document.getElementById('mp-tipo-dias').value
+  const diasSemana  = tipoDias === 'recurrente'
+    ? [...document.querySelectorAll('[name="mp-dia"]:checked')].map(c => parseInt(c.value))
+    : []
+  const activa = document.getElementById('mp-toggle-activa').classList.contains('on')
+  const payload = {
+    titulo,
+    descripcion:     document.getElementById('mp-desc').value.trim() || null,
+    tipo_dias:       tipoDias,
+    dias_semana:     diasSemana,
+    fecha_inicio:    document.getElementById('mp-fecha-ini').value || null,
+    fecha_fin:       document.getElementById('mp-fecha-fin').value || null,
+    hora_inicio:     horaIni,
+    hora_fin:        document.getElementById('mp-hora-fin').value.trim() || null,
+    tipo_descuento:  document.getElementById('mp-tipo-desc').value,
+    valor_descuento: parseFloat(document.getElementById('mp-valor-desc').value) || 0,
+    precio_base:     parseFloat(document.getElementById('mp-precio-base').value) || 0,
+    activa
+  }
+  if (_editingPromoId) {
+    const { error } = await sbClient.from('promociones').update(payload).eq('id', _editingPromoId)
+    if (error) { alert('Error al guardar: ' + error.message); return }
+  } else {
+    const { error } = await sbClient.from('promociones').insert(payload)
+    if (error) { alert('Error al crear: ' + error.message); return }
+  }
+  closeModalPromo()
+  await cargarPromociones()
+  renderPromociones()
+}
+
+// ── Sugerencias IA ──────────────────────────────────────────
+
+function generarSugeridas() {
+  const btn = document.getElementById('btn-sug')
+  btn.textContent = 'Analizando...'
+  btn.disabled = true
+  setTimeout(() => {
+    const sugs = calcularSugeridas()
+    const cont = document.getElementById('sugeridas-cont')
+    if (!sugs.length) {
+      cont.innerHTML = '<div style="color:var(--texto-dim);font-size:13px">No hay suficientes datos aún (se necesitan al menos 2 semanas de reservas).</div>'
+    } else {
+      cont.innerHTML = `<div class="sugerida-grid">${sugs.map((s, i) => renderPromoSugeridaCard(s, i)).join('')}</div>`
+    }
+    btn.textContent = 'Regenerar'
+    btn.disabled = false
+  }, 700)
+}
+
+function calcularSugeridas() {
+  const hoy    = new Date()
+  const hace30 = new Date(hoy); hace30.setDate(hoy.getDate() - 30)
+  const limite = hace30.toISOString().split('T')[0]
+  const recientes = RESERVAS.filter(r => r.fecha && r.fecha >= limite)
+  if (recientes.length < 10) return []
+
+  const mapa = {}
+  recientes.forEach(r => {
+    if (!r.fecha || r.hora === undefined) return
+    const dow = new Date(r.fecha + 'T12:00:00').getDay()
+    const h   = typeof r.hora === 'string'
+      ? parseInt(r.hora.split(':')[0]) + parseInt(r.hora.split(':')[1] || 0) / 60
+      : r.hora
+    const key = `${dow}_${Math.floor(h)}`
+    mapa[key] = (mapa[key] || 0) + 1
+  })
+
+  const semanas = Math.max(1, Math.round((hoy - hace30) / (7 * 24 * 3600 * 1000)))
+  const candidatos = []
+  for (let dow = 1; dow <= 6; dow++) {
+    for (let h = 9; h <= 20; h++) {
+      const ocp = (mapa[`${dow}_${h}`] || 0) / (semanas * 4)
+      if (ocp < 0.4) candidatos.push({ dow, hora: h, ocp })
+    }
+  }
+  candidatos.sort((a, b) => a.ocp - b.ocp)
+
+  const DIAS = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado']
+  const FRANJA = h => h < 12 ? 'mañana' : h < 16 ? 'mediodía' : h < 20 ? 'tarde' : 'noche'
+  const elegidos = []; const dowUsados = new Set()
+  for (const c of candidatos) {
+    if (elegidos.length >= 4) break
+    if (!dowUsados.has(c.dow)) { elegidos.push(c); dowUsados.add(c.dow) }
+  }
+  return elegidos.map(c => {
+    const desc = Math.min(30, Math.max(15, Math.round((1 - c.ocp) * 25)))
+    const hIni = `${String(c.hora).padStart(2,'0')}:00`
+    const hFin = `${String(c.hora + 2).padStart(2,'0')}:00`
+    const dia   = DIAS[c.dow]
+    const franja = FRANJA(c.hora)
+    return {
+      titulo:          `${desc}% OFF ${dia} por la ${franja}`,
+      descripcion:     `Todos los ${dia} de ${hIni} a ${hFin} habilitamos un ${desc}% de descuento. ¡Reservá tu cancha al mejor precio!`,
+      tipo_dias:       'recurrente',
+      dias_semana:     [c.dow],
+      hora_inicio:     hIni,
+      hora_fin:        hFin,
+      tipo_descuento:  'porcentaje',
+      valor_descuento: desc,
+      precio_base:     0,
+      ocp:             Math.round(c.ocp * 100)
+    }
+  })
+}
+
+function renderPromoSugeridaCard(s, i) {
+  const DA = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb']
+  return `
+  <div class="sugerida-card">
+    <div class="sugerida-label">✦ Sugerencia IA #${i+1} · ${s.ocp}% ocupación promedio</div>
+    <div class="sugerida-titulo">${escHtml(s.titulo)}</div>
+    <div class="sugerida-desc">${escHtml(s.descripcion)}</div>
+    <div style="font-size:11px;color:var(--texto-dim);margin-bottom:12px">
+      Todos los ${s.dias_semana.map(d => DA[d]).join(', ')} · ${s.hora_inicio} – ${s.hora_fin} · ${s.valor_descuento}% OFF
+    </div>
+    <button class="btn btn-orange" style="width:100%;font-size:12px;padding:8px" onclick="activarSugerida(${i})">
+      Crear esta promoción
+    </button>
+  </div>`
+}
+
+function activarSugerida(idx) {
+  const sugs = calcularSugeridas()
+  const s = sugs[idx]; if (!s) return
+  _editingPromoId = null
+  document.getElementById('modal-promo-title').textContent = 'Nueva Promoción (Sugerida IA)'
+  document.getElementById('mp-titulo').value    = s.titulo
+  document.getElementById('mp-desc').value      = s.descripcion
+  document.getElementById('mp-tipo-dias').value = s.tipo_dias
+  document.getElementById('mp-hora-ini').value  = s.hora_inicio
+  document.getElementById('mp-hora-fin').value  = s.hora_fin
+  document.getElementById('mp-tipo-desc').value = s.tipo_descuento
+  document.getElementById('mp-precio-base').value  = ''
+  document.getElementById('mp-valor-desc').value   = s.valor_descuento
+  document.getElementById('mp-fecha-ini').value    = ''
+  document.getElementById('mp-fecha-fin').value    = ''
+  document.querySelectorAll('[name="mp-dia"]').forEach(cb => { cb.checked = s.dias_semana.includes(parseInt(cb.value)) })
+  document.getElementById('mp-toggle-activa').className = 'toggle-switch on'
+  mpToggleTipoDias()
+  mpPreviewPrecio()
+  document.getElementById('modal-promo').style.display = 'flex'
+}
+</script>
+</body>
+</html>
