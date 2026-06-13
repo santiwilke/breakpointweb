@@ -922,7 +922,7 @@
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="2" y="3" width="20" height="18" rx="2"/><line x1="2" y1="9" x2="22" y2="9"/><line x1="12" y1="3" x2="12" y2="21"/></svg>
     </div>
     <div>
-      <div class="stat-num">4</div>
+      <div class="stat-num"><span>4</span></div>
       <div class="stat-lbl">Canchas techadas</div>
     </div>
   </div>
@@ -2009,6 +2009,7 @@ if (statsBand) {
   const yaVisible = r.top < window.innerHeight && r.bottom > 0;
 
   if (!yaVisible) {
+    // Solo resetear a 0 si NO está en viewport (para hacer la animación al scrollear)
     statNums.forEach(el => {
       const textNode = [...el.childNodes].find(n => n.nodeType === 3 && n.textContent.trim());
       if (textNode) {
@@ -2016,23 +2017,17 @@ if (statsBand) {
         if (!isNaN(num) && num > 0) { el.setAttribute('data-count', num); textNode.textContent = '0'; }
       }
     });
-    let animated = false;
-    const doAnimate = () => {
-      if (animated) return;
-      animated = true;
-      statsBand.querySelectorAll('.stat-num[data-count]').forEach(animateCount);
-    };
     const statsObserver = new IntersectionObserver((entries) => {
-      entries.forEach(e => { if (e.isIntersecting) { doAnimate(); statsObserver.unobserve(e.currentTarget); } });
-    }, { threshold: 0 });
-    statsObserver.observe(statsBand);
-    // Fallback: si el usuario no scrollea hasta la sección, mostrar los valores correctos igual
-    setTimeout(() => {
-      statsBand.querySelectorAll('.stat-num[data-count]').forEach(el => {
-        if (!animated) el.textContent = el.getAttribute('data-count');
+      entries.forEach(e => {
+        if (e.isIntersecting) {
+          e.currentTarget.querySelectorAll('.stat-num[data-count]').forEach(animateCount);
+          statsObserver.unobserve(e.currentTarget);
+        }
       });
-    }, 3000);
+    }, { threshold: 0.1 });
+    statsObserver.observe(statsBand);
   }
+  // Si ya es visible: no tocar nada, el HTML muestra el valor correcto directamente
 }
 
 // ── PARALLAX suave en hero ───────────────────────────
@@ -2040,4 +2035,12 @@ const heroInner = document.querySelector('.hero-inner');
 if (heroInner) {
   window.addEventListener('scroll', () => {
     const y = window.scrollY;
-    if (y < window.innerHeigh
+    if (y < window.innerHeight) {
+      heroInner.style.transform = `translateY(${y * 0.18}px)`;
+      heroInner.style.opacity = 1 - (y / window.innerHeight) * 0.6;
+    }
+  }, { passive: true });
+}
+</script>
+</body>
+</html>
