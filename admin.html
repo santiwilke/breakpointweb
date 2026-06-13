@@ -590,6 +590,42 @@
     .menu-add-inp:focus { border-color:var(--azul); }
     .menu-add-btn { background:var(--azul); border:none; color:#fff; border-radius:6px; padding:5px 10px; font-size:11px; font-weight:700; cursor:pointer; white-space:nowrap; transition:background .15s; }
     .menu-add-btn:hover { background:var(--naranja); }
+
+    /* ── PROMOCIONES ── */
+    .promo-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(300px,1fr)); gap:16px; }
+    .promo-card { background:var(--card); border:1px solid var(--borde-2); border-radius:14px; padding:18px; position:relative; overflow:hidden; transition:transform .2s,box-shadow .2s; }
+    .promo-card::before { content:''; position:absolute; top:0; left:0; right:0; height:3px; background:linear-gradient(90deg,var(--naranja),#f59e0b); }
+    .promo-card:hover { transform:translateY(-2px); box-shadow:0 8px 24px rgba(0,0,0,.25); }
+    .promo-card.inactiva { opacity:.55; }
+    .promo-badge { display:inline-flex; align-items:center; gap:4px; font-size:10px; font-weight:700; padding:3px 8px; border-radius:20px; text-transform:uppercase; letter-spacing:.04em; }
+    .promo-badge.activa { background:rgba(34,197,94,.15); color:#22c55e; }
+    .promo-badge.inactiva { background:rgba(255,255,255,.08); color:var(--texto-dim); }
+    .promo-titulo { font-size:15px; font-weight:800; margin:8px 0 4px; }
+    .promo-desc { font-size:12px; color:var(--texto-dim); margin-bottom:10px; }
+    .promo-precio { display:flex; gap:8px; align-items:baseline; margin-bottom:10px; flex-wrap:wrap; }
+    .promo-precio-base { font-size:13px; color:var(--texto-dim); text-decoration:line-through; }
+    .promo-precio-final { font-size:20px; font-weight:800; color:var(--naranja); }
+    .promo-precio-desc { font-size:11px; color:#22c55e; font-weight:700; }
+    .promo-meta { font-size:11px; color:var(--texto-dim); margin-bottom:12px; line-height:1.6; }
+    .promo-actions { display:flex; gap:8px; flex-wrap:wrap; }
+    .sugerida-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); gap:12px; }
+    .sugerida-card { background:var(--azul-mid); border:1px solid var(--borde); border-radius:12px; padding:14px; }
+    .sugerida-label { font-size:9px; font-weight:700; color:var(--naranja); text-transform:uppercase; letter-spacing:.06em; margin-bottom:4px; }
+    .sugerida-titulo { font-size:14px; font-weight:700; margin-bottom:4px; }
+    .sugerida-desc { font-size:11px; color:var(--texto-dim); margin-bottom:10px; line-height:1.5; }
+    .toggle-switch { width:40px; height:22px; border-radius:11px; border:none; cursor:pointer; position:relative; flex-shrink:0; transition:background .2s; }
+    .toggle-switch.on  { background:var(--verde,#22c55e); }
+    .toggle-switch.off { background:var(--borde); }
+    .toggle-switch::after { content:''; position:absolute; top:3px; width:16px; height:16px; border-radius:50%; background:#fff; transition:left .2s; }
+    .toggle-switch.on::after  { left:21px; }
+    .toggle-switch.off::after { left:3px; }
+    .mp-dia-lbl { display:inline-flex; align-items:center; gap:4px; font-size:12px; cursor:pointer; background:var(--azul-mid); border:1px solid var(--borde); border-radius:6px; padding:5px 10px; user-select:none; transition:border-color .15s,color .15s; }
+    .mp-dia-lbl:has(input:checked) { border-color:var(--naranja); color:var(--naranja); }
+    .mp-dia-lbl input { display:none; }
+    @media(max-width:800px) {
+      .promo-grid,.sugerida-grid { grid-template-columns:1fr; }
+      .promo-actions { flex-wrap:wrap; }
+    }
   </style>
 </head>
 <body>
@@ -637,6 +673,8 @@
       <button class="nav-item" data-s="resumen" onclick="navigate('resumen')"><span class="ico"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="8" y1="14" x2="8" y2="14"/><line x1="12" y1="14" x2="12" y2="14"/><line x1="16" y1="14" x2="16" y2="14"/></svg></span> Resumen semanal</button>
       <div class="sb-label">Kiosco</div>
       <button class="nav-item" data-s="menu" onclick="navigate('menu')"><span class="ico"><svg viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="13" y2="16"/></svg></span> Menú del kiosco</button>
+      <div class="sb-label">Marketing</div>
+      <button class="nav-item" data-s="promociones" onclick="navigate('promociones')"><span class="ico"><svg viewBox="0 0 24 24"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg></span> Promociones</button>
       <div class="sb-label">Inteligencia</div>
       <button class="nav-item" data-s="recomendaciones" onclick="navigate('recomendaciones')"><span class="ico"><svg viewBox="0 0 24 24"><line x1="12" y1="2" x2="12" y2="6"/><path d="M12 6a6 6 0 0 1 6 6c0 2.5-1.5 4.5-3 6H9c-1.5-1.5-3-3.5-3-6a6 6 0 0 1 6-6z"/><line x1="9" y1="22" x2="15" y2="22"/><line x1="10" y1="19" x2="14" y2="19"/></svg></span> Recomendaciones</button>
     </div>
@@ -844,6 +882,96 @@
         <div class="card" id="res-conclu"></div>
       </div>
 
+      <!-- PROMOCIONES -->
+      <div class="section" id="section-promociones">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:10px">
+          <div>
+            <div style="font-size:22px;font-weight:800">Promociones</div>
+            <div style="font-size:13px;color:var(--texto-dim)">Creá y gestioná promociones visibles en la web pública</div>
+          </div>
+          <button class="btn btn-orange" onclick="openModalPromo(null)">+ Nueva promoción</button>
+        </div>
+        <div class="card" style="margin-bottom:20px">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:8px">
+            <div>
+              <div style="font-size:15px;font-weight:700">✦ Sugerencias IA</div>
+              <div style="font-size:12px;color:var(--texto-dim);margin-top:2px">Basado en los horarios de menor ocupación de los últimos 30 días</div>
+            </div>
+            <button class="btn btn-outline" onclick="generarSugeridas()" id="btn-sug">Generar sugerencias</button>
+          </div>
+          <div id="sugeridas-cont"><div style="color:var(--texto-dim);font-size:13px">Presioná "Generar sugerencias" para obtener 4 promos recomendadas por IA.</div></div>
+        </div>
+        <div style="font-size:15px;font-weight:700;margin-bottom:12px">Mis promociones</div>
+        <div id="promo-cont"><div style="color:var(--texto-dim);font-size:13px">No hay promociones creadas aún.</div></div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- MODAL PROMO -->
+<div id="modal-promo" class="modal-ov" style="display:none">
+  <div class="modal modal-box" style="max-width:520px;width:100%;overflow-y:auto;max-height:90vh">
+    <div class="modal-title" id="modal-promo-title">Nueva Promoción</div>
+    <div style="display:flex;flex-direction:column;gap:14px">
+      <div class="fgroup"><label>Título *</label><input class="finput" id="mp-titulo" placeholder="ej: Promo Mediodía Miércoles" maxlength="60"></div>
+      <div class="fgroup"><label>Descripción</label><input class="finput" id="mp-desc" placeholder="ej: Jugá al precio especial los miércoles al mediodía" maxlength="120"></div>
+      <div class="fgroup">
+        <label>Tipo de vigencia</label>
+        <select class="finput" id="mp-tipo-dias" onchange="mpToggleTipoDias()">
+          <option value="recurrente">Días recurrentes (ej: todos los miércoles)</option>
+          <option value="fecha">Rango de fechas específico</option>
+        </select>
+      </div>
+      <div id="mp-dias-wrap">
+        <label style="font-size:12px;color:var(--texto-dim);font-weight:600;margin-bottom:6px;display:block">Días de la semana</label>
+        <div style="display:flex;gap:6px;flex-wrap:wrap">
+          <label class="mp-dia-lbl"><input type="checkbox" name="mp-dia" value="1"> Lun</label>
+          <label class="mp-dia-lbl"><input type="checkbox" name="mp-dia" value="2"> Mar</label>
+          <label class="mp-dia-lbl"><input type="checkbox" name="mp-dia" value="3"> Mié</label>
+          <label class="mp-dia-lbl"><input type="checkbox" name="mp-dia" value="4"> Jue</label>
+          <label class="mp-dia-lbl"><input type="checkbox" name="mp-dia" value="5"> Vie</label>
+          <label class="mp-dia-lbl"><input type="checkbox" name="mp-dia" value="6"> Sáb</label>
+          <label class="mp-dia-lbl"><input type="checkbox" name="mp-dia" value="0"> Dom</label>
+        </div>
+      </div>
+      <div id="mp-fecha-wrap" style="display:none">
+        <div class="row2">
+          <div class="fgroup"><label>Fecha inicio</label><input type="date" class="finput" id="mp-fecha-ini"></div>
+          <div class="fgroup"><label>Fecha fin (opcional)</label><input type="date" class="finput" id="mp-fecha-fin"></div>
+        </div>
+      </div>
+      <div class="row2">
+        <div class="fgroup"><label>Hora inicio *</label><select class="finput" id="mp-hora-ini"><option value="">Seleccioná...</option></select></div>
+        <div class="fgroup"><label>Hora fin (opcional)</label><select class="finput" id="mp-hora-fin"><option value="">Sin hora fin</option></select></div>
+      </div>
+      <div class="fgroup">
+        <label>Tipo de descuento</label>
+        <select class="finput" id="mp-tipo-desc" onchange="mpPreviewPrecio()">
+          <option value="porcentaje">Porcentaje (% OFF)</option>
+          <option value="precio_fijo">Precio fijo especial ($)</option>
+        </select>
+      </div>
+      <div class="row2">
+        <div class="fgroup"><label>Precio base ($)</label><input type="number" class="finput" id="mp-precio-base" placeholder="ej: 15000" min="0" oninput="mpPreviewPrecio()"></div>
+        <div class="fgroup"><label id="mp-desc-label">Descuento (%)</label><input type="number" class="finput" id="mp-valor-desc" placeholder="ej: 30" min="0" oninput="mpPreviewPrecio()"></div>
+      </div>
+      <div id="mp-precio-preview" style="background:var(--azul-mid);border-radius:10px;padding:12px 14px;font-size:13px;display:none">
+        <div style="display:flex;justify-content:space-between;margin-bottom:4px"><span style="color:var(--texto-dim)">Precio base</span><span id="mp-prev-base"></span></div>
+        <div style="display:flex;justify-content:space-between;margin-bottom:4px"><span style="color:var(--texto-dim)">Descuento</span><span style="color:#22c55e" id="mp-prev-desc"></span></div>
+        <div style="display:flex;justify-content:space-between;font-weight:800"><span>Precio final</span><span style="color:var(--naranja)" id="mp-prev-final"></span></div>
+      </div>
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-top:1px solid var(--borde)">
+        <div>
+          <div style="font-size:14px;font-weight:700">Activa en la web</div>
+          <div style="font-size:11px;color:var(--texto-dim)">Visible en la página pública</div>
+        </div>
+        <button class="toggle-switch off" id="mp-toggle-activa" onclick="this.classList.toggle('on');this.classList.toggle('off')"></button>
+      </div>
+    </div>
+    <div style="display:flex;gap:10px;margin-top:18px;justify-content:flex-end;flex-wrap:wrap">
+      <button class="btn btn-outline" onclick="closeModalPromo()">Cancelar</button>
+      <button class="btn btn-orange" onclick="savePromo()">Guardar</button>
     </div>
   </div>
 </div>
@@ -1164,7 +1292,7 @@ function enterApp() {
   const hoy = new Date()
   document.getElementById('tb-date').textContent =
     `${DIAS_ES[hoy.getDay()]}, ${hoy.getDate()} de ${MESES[hoy.getMonth()]} de ${hoy.getFullYear()}`
-  Promise.all([cargarReservas(), cargarFijos(), cargarMenu()]).then(() => { initGrillaDia(); navigate('hoy') })
+  Promise.all([cargarReservas(), cargarFijos(), cargarMenu(), cargarPromociones()]).then(() => { initGrillaDia(); navigate('hoy') })
 }
 
 async function cargarReservas() {
@@ -1229,14 +1357,16 @@ const TITULOS = {
   hoy:'Hoy', reservas:'Reservas', financiero:'Dashboard Financiero',
   ocupacion:'Análisis de Ocupación', clientes:'Clientes',
   recomendaciones:'Recomendaciones Inteligentes', resumen:'Resumen Semanal',
-  'horarios-fijos':'Horarios Fijos', menu:'Menú del Kiosco'
+  'horarios-fijos':'Horarios Fijos', menu:'Menú del Kiosco',
+  promociones:'Promociones'
 }
 const RENDERS = {
   hoy: renderHoy, reservas: renderReservas, financiero: renderFinanciero,
   ocupacion: renderOcupacion, clientes: renderClientes,
   recomendaciones: renderRecomendaciones, resumen: renderResumen,
   'horarios-fijos': renderHorariosFijos,
-  menu: renderMenuAdmin
+  menu: renderMenuAdmin,
+  promociones: renderPromociones
 }
 
 function navigate(s) {
@@ -2911,196 +3041,4 @@ function saveHorarioFijo() {
   if (tipo === 'cliente' && telefono) {
     const dur = duracion
     const durLbl = dur===1?'1 hora':dur===1.5?'1 hora y media':dur===2?'2 horas':dur===2.5?'2 horas y media':'3 horas'
-    const diasNom = dias.sort((a,b)=>(parseInt(a)||7)-(parseInt(b)||7)).map(d=>['Domingo','Lunes','Martes','Miercoles','Jueves','Viernes','Sabado'][parseInt(d)]).join(', ')
-    let msg = `Hola ${etiqueta}, tu turno fijo en Break Point Padel ha sido registrado.\n\n`
-    msg += `Dias: ${diasNom}\n`
-    msg += `Hora: ${hora}hs (${durLbl})\n`
-    msg += `${mfCanchaSeleccionada}\n`
-    if (precio_hora > 0) msg += `Valor por turno: $${Math.round(precio_hora*duracion).toLocaleString('es-AR')}\n`
-    msg += `\nNos vemos en la cancha!`
-    abrirWAOverlay(etiqueta, msg, telefono)
-  }
-}
-
-function abrirWAOverlay(nombre, msg, telefono) {
-  const telLimpio = (telefono||'').replace(/\D/g,'')
-  document.getElementById('wa-fijo-nombre').textContent = nombre
-  document.getElementById('wa-fijo-msg-preview').textContent = msg
-  const btn = document.getElementById('wa-fijo-btn')
-  if (telLimpio) {
-    const waUrl = `https://wa.me/54${telLimpio}?text=${encodeURIComponent(msg)}`
-    btn.style.display = 'inline-flex'
-    btn.onclick = () => { window.open(waUrl, '_blank'); cerrarWAFijo() }
-  } else {
-    btn.style.display = 'none'
-  }
-  const ov = document.getElementById('overlay-wa-fijo')
-  ov.style.display = 'flex'
-}
-
-function cerrarWAFijo() {
-  document.getElementById('overlay-wa-fijo').style.display = 'none'
-}
-
-function eliminarGrupoFijo(ids) {
-  if (!confirm('¿Eliminar este horario fijo?\nLas ocurrencias de hoy y anteriores quedarán en los reportes históricos.')) return
-  const hoy = hoyStr()
-  if (isDemoMode) {
-    FIXED_SCHEDULES = FIXED_SCHEDULES.map(f => ids.includes(f.id) ? {...f, fechaFin: hoy} : f)
-    localStorage.setItem('bp_fixed_schedules', JSON.stringify(FIXED_SCHEDULES))
-    renderHorariosFijos(); renderHoy()
-  } else {
-    sbClient.from('horarios_fijos').update({ fecha_fin: hoy }).in('id', ids)
-      .then(({ error }) => {
-        if (error) { alert('Error al eliminar: ' + error.message); return }
-        FIXED_SCHEDULES = FIXED_SCHEDULES.map(f => ids.includes(f.id) ? {...f, fechaFin: hoy} : f)
-        renderHorariosFijos(); renderHoy()
-      })
-  }
-}
-
-/* ══════════════════════════════════════
-   INIT
-   ══════════════════════════════════════ */
-document.getElementById('l-pass').addEventListener('keydown', e=>{ if(e.key==='Enter') doLogin() })
-document.getElementById('modal').addEventListener('click', e=>{ if(e.target===e.currentTarget) closeModal() })
-document.addEventListener('click', e=>{ if(!e.target.closest('.ac-wrap')) document.getElementById('ac-drop').style.display='none' })
-document.getElementById('modal-fijo').addEventListener('click', e=>{ if(e.target===e.currentTarget) closeModalFijo() })
-
-// Actualizar fecha del subtítulo cada vez que la ventana recibe el foco (por si pasó la medianoche o el usuario volvió)
-function actualizarFechaHoy() {
-  const tb = document.getElementById('tb-date')
-  if (!tb) return
-  const h = new Date()
-  tb.textContent = `${DIAS_ES[h.getDay()]}, ${h.getDate()} de ${MESES[h.getMonth()]} de ${h.getFullYear()}`
-}
-function formatTel(inp) {
-  let d = inp.value.replace(/\D/g, '')
-  if (!d.startsWith('11')) d = '11' + d.replace(/^1?/, '')
-  d = d.slice(0, 10)
-  let fmt = d.length > 6 ? d.slice(0,2)+'-'+d.slice(2,6)+'-'+d.slice(6)
-           : d.length > 2 ? d.slice(0,2)+'-'+d.slice(2)
-           : '11-'
-  inp.value = fmt
-}
-function telKeydown(e) {
-  const inp = e.target
-  const PREFIX = '11-'
-  // Impedir borrar el prefijo "11-"
-  if ((e.key === 'Backspace' || e.key === 'Delete') && inp.value.length <= PREFIX.length) {
-    e.preventDefault()
-    inp.value = PREFIX
-  }
-}
-
-window.addEventListener('focus', actualizarFechaHoy)
-// También actualizar cada minuto por si quedó abierta de un día para el otro
-setInterval(actualizarFechaHoy, 60000)
-
-/* ══════════════════════════════════════
-   MENÚ DEL KIOSCO
-   ══════════════════════════════════════ */
-let MENU_ITEMS = []
-
-const MENU_CATS_DEF = [
-  { id:'hamburguesas', nombre:'Hamburguesas & Sándwiches', color:null,
-    svg:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11 Q3 6 12 6 Q21 6 21 11"/><rect x="2" y="11" width="20" height="3" rx="1"/><path d="M3 14v1a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-1"/></svg>' },
-  { id:'milanesas', nombre:'Milanesas & Carnes', color:null,
-    svg:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8a6 6 0 0 0-6-6 6 6 0 0 0-6 6c0 7 6 13 6 13s6-6 6-13Z"/></svg>' },
-  { id:'pastas', nombre:'Pastas', color:null,
-    svg:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 15a4 4 0 0 0 4 4h10a4 4 0 0 0 4-4"/><path d="M3 15c0-4.4 8-8 9-12"/><path d="M21 15c0-4.4-8-8-9-12"/></svg>' },
-  { id:'pizzas', nombre:'Pizzas', color:null,
-    svg:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 20h20L12 2Z"/><path d="M12 2v18"/></svg>' },
-  { id:'healthy', nombre:'Menú Healthy', color:'#2d6a2d',
-    svg:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>' },
-  { id:'cafeteria', nombre:'Cafetería', color:null,
-    svg:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8Z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>' },
-  { id:'alcohol', nombre:'Bebidas c/ Alcohol', color:null,
-    svg:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 22h8"/><path d="M12 11v11"/><path d="M17 2H7l5 9 5-9Z"/></svg>' },
-  { id:'sin-alcohol', nombre:'Bebidas Sin Alcohol', color:null,
-    svg:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 2h8l1 8H7L8 2Z"/><path d="M7 10c0 5 2 8 5 10 3-2 5-5 5-10"/></svg>' },
-]
-
-async function cargarMenu() {
-  if (isDemoMode) { MENU_ITEMS = []; return }
-  const { data, error } = await sbClient.from('menu_items').select('*').order('orden')
-  if (error) { console.error('Error cargando menú:', error); return }
-  MENU_ITEMS = data || []
-}
-
-function renderMenuAdmin() {
-  const grid = document.getElementById('menu-admin-grid')
-  if (!grid) return
-  if (!MENU_ITEMS.length && !isDemoMode) {
-    grid.innerHTML = '<div style="color:var(--texto-dim);font-size:13px;padding:20px 0">No hay ítems en el menú. Ejecutá el SQL de inicialización en Supabase.</div>'
-    return
-  }
-  grid.innerHTML = MENU_CATS_DEF.map(cat => {
-    const items = MENU_ITEMS.filter(i => i.categoria === cat.id)
-    const headBg = cat.color || 'var(--azul-mid,#1a3a6b)'
-    const rows = items.map(item => `
-      <div class="menu-admin-row${item.activo ? '' : ' inactivo'}" data-id="${item.id}">
-        <div style="flex:1;min-width:0">
-          <div class="menu-admin-name">${item.nombre}</div>
-          ${item.nota ? `<div class="menu-admin-nota">${item.nota}</div>` : ''}
-        </div>
-        <button class="menu-toggle ${item.activo ? 'on' : 'off'}" title="${item.activo ? 'Desactivar' : 'Activar'}"
-          onclick="toggleMenuItem(${item.id},${!item.activo})"></button>
-        <button class="menu-del-btn" title="Eliminar" onclick="deleteMenuItem(${item.id},'${item.nombre.replace(/'/g,"\\'")}')">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-        </button>
-      </div>`).join('')
-    return `
-      <div class="menu-admin-cat">
-        <div class="menu-admin-cat-head" style="background:${headBg}">
-          ${cat.svg}<span>${cat.nombre}</span>
-        </div>
-        <div class="menu-admin-items">
-          ${rows || '<div style="padding:10px 14px;font-size:12px;color:var(--texto-dim)">Sin ítems</div>'}
-        </div>
-        <div class="menu-add-row">
-          <input class="menu-add-inp" id="inp-${cat.id}" placeholder="Nuevo plato..." onkeydown="if(event.key==='Enter')addMenuItem('${cat.id}')">
-          <button class="menu-add-btn" onclick="addMenuItem('${cat.id}')">+ Agregar</button>
-        </div>
-      </div>`
-  }).join('')
-}
-
-async function toggleMenuItem(id, activo) {
-  if (isDemoMode) return
-  const { error } = await sbClient.from('menu_items').update({ activo }).eq('id', id)
-  if (error) { alert('Error: ' + error.message); return }
-  const item = MENU_ITEMS.find(i => i.id === id)
-  if (item) item.activo = activo
-  renderMenuAdmin()
-}
-
-async function deleteMenuItem(id, nombre) {
-  if (!confirm(`¿Eliminar "${nombre}" del menú?`)) return
-  if (isDemoMode) { MENU_ITEMS = MENU_ITEMS.filter(i => i.id !== id); renderMenuAdmin(); return }
-  const { error } = await sbClient.from('menu_items').delete().eq('id', id)
-  if (error) { alert('Error: ' + error.message); return }
-  MENU_ITEMS = MENU_ITEMS.filter(i => i.id !== id)
-  renderMenuAdmin()
-}
-
-async function addMenuItem(catId) {
-  const inp = document.getElementById('inp-' + catId)
-  const nombre = inp?.value.trim()
-  if (!nombre) return
-  const orden = MENU_ITEMS.filter(i => i.categoria === catId).length + 1
-  if (isDemoMode) {
-    MENU_ITEMS.push({ id: Date.now(), categoria: catId, nombre, nota: null, activo: true, orden })
-    renderMenuAdmin()
-    return
-  }
-  const { data, error } = await sbClient.from('menu_items')
-    .insert({ categoria: catId, nombre, activo: true, orden })
-    .select().single()
-  if (error) { alert('Error: ' + error.message); return }
-  MENU_ITEMS.push(data)
-  renderMenuAdmin()
-}
-</script>
-</body>
-</html>
+    const diasNom = dias.sort((a,b)=>(parseInt
