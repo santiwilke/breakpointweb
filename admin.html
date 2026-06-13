@@ -324,21 +324,60 @@
       .tb-title { font-size:16px; }
       .tb-date { font-size:11px; }
 
-      /* Tablas: scroll horizontal dentro del card */
+      /* Tablas: scroll horizontal como fallback */
       .tbl-wrap { overflow-x:auto; -webkit-overflow-scrolling:touch; }
-      table { min-width:600px; font-size:12px; }
-      thead th { padding:7px 10px; font-size:9px; }
-      tbody td { padding:9px 10px; }
 
-      /* Ocultar columnas menos importantes en mobile */
-      table th:nth-child(6), table td:nth-child(6),
-      table th:nth-child(8), table td:nth-child(8) { display:none; }
+      /* ── Tabla RESERVAS → cards en mobile ── */
+      #section-reservas .tbl-wrap { overflow-x:visible; }
+      #section-reservas table, #section-reservas tbody { display:block; width:100%; }
+      #section-reservas thead { display:none; }
+      #section-reservas tbody tr {
+        display:grid; grid-template-columns:1fr 1fr;
+        background:var(--azul-mid); border:1px solid var(--borde);
+        border-radius:11px; padding:12px; margin-bottom:10px; gap:8px 12px;
+      }
+      #section-reservas tbody td {
+        display:flex; flex-direction:column;
+        padding:0; border:none; font-size:13px;
+      }
+      #section-reservas tbody td::before {
+        content:attr(data-label);
+        font-size:9px; font-weight:700; color:var(--texto-dim);
+        text-transform:uppercase; letter-spacing:.06em; margin-bottom:2px;
+      }
+      /* Campos que ocupan todo el ancho */
+      #section-reservas tbody td[data-label="Cliente"],
+      #section-reservas tbody td[data-label="Estado"],
+      #section-reservas tbody td[data-label="Acciones"] { grid-column:span 2; }
+
+      /* ── Tabla HORARIOS FIJOS → cards en mobile ── */
+      #fijos-tabla .tbl-wrap { overflow-x:visible; }
+      #fijos-tabla table, #fijos-tabla tbody { display:block; width:100%; }
+      #fijos-tabla thead { display:none; }
+      #fijos-tabla tbody tr {
+        display:grid; grid-template-columns:1fr 1fr;
+        background:var(--azul-mid); border:1px solid var(--borde);
+        border-radius:11px; padding:12px; margin-bottom:10px; gap:8px 12px;
+      }
+      #fijos-tabla tbody td {
+        display:flex; flex-direction:column;
+        padding:0; border:none; font-size:13px;
+      }
+      #fijos-tabla tbody td::before {
+        content:attr(data-label);
+        font-size:9px; font-weight:700; color:var(--texto-dim);
+        text-transform:uppercase; letter-spacing:.06em; margin-bottom:2px;
+      }
+      #fijos-tabla tbody td[data-label="Días"],
+      #fijos-tabla tbody td[data-label="Cliente/Etiqueta"],
+      #fijos-tabla tbody td[data-label="Acciones"] { grid-column:span 2; }
 
       /* Grilla de canchas */
       #grilla-hoy { max-width:calc(100vw - 28px) !important; }
 
-      /* Charts: altura reducida en mobile */
-      .chart-card canvas { max-height:180px; }
+      /* Charts: overflow hidden, altura reducida */
+      .chart-card { overflow:hidden; }
+      .chart-card > div[style*="height"] { height:160px !important; position:relative; }
 
       /* Cards */
       .card, .chart-card { padding:14px; }
@@ -356,9 +395,20 @@
       .modal-box { max-width:calc(100vw - 24px) !important; width:auto !important; }
       .row2 { grid-template-columns:1fr; }
 
-      /* Cabecera sección horarios fijos */
-      #section-horarios-fijos > div:first-child { flex-direction:column; gap:12px; align-items:flex-start; }
+      /* Cabecera sección horarios fijos — apilada */
+      #section-horarios-fijos > div:first-child {
+        flex-direction:column; gap:10px; align-items:flex-start;
+      }
+      #section-horarios-fijos > div:first-child > div { width:100%; }
       #section-horarios-fijos > div:first-child .btn { width:100%; }
+      #section-horarios-fijos > div:first-child div[style*="font-size:13px"] {
+        white-space:normal; word-break:break-word;
+      }
+
+      /* Info box horarios fijos — texto sin corte */
+      #section-horarios-fijos > div:last-child {
+        overflow-wrap:break-word; word-break:break-word;
+      }
 
       /* Resumen header */
       .res-header { padding:16px; }
@@ -366,6 +416,12 @@
 
       /* Rec cards */
       .rec-card { flex-direction:column; }
+
+      /* Selector de día en Hoy */
+      #section-hoy > div:first-child { flex-wrap:wrap; gap:8px; }
+
+      /* Composición financiero */
+      #fin-tipos .grid { grid-template-columns:1fr !important; }
     }
 
     @media(min-width:801px) { #mobile-menu-btn { display:none; } }
@@ -2051,17 +2107,18 @@ function renderReservas() {
         : `<span style="color:var(--texto-dim);font-size:11px">sin seña</span>`
     return `
     <tr>
-      <td>${formatF(r.fecha)}</td><td>${r.hora}</td>
-      <td style="color:var(--texto-dim)">${durLbl}</td>
-      <td>${r.cancha}</td>
-      <td style="font-weight:600">${r.cliente}</td>
-      <td style="color:var(--texto-dim)">${r.telefono}</td>
-      <td>${r.estado!=='cancelada'?$(r.monto):'—'}</td>
-      <td>${senaCell}</td>
-      <td><span class="badge ${r.estado}">${r.estado}</span></td>
-      <td><div style="display:flex;gap:5px;align-items:center">
+      <td data-label="Fecha">${formatF(r.fecha)}</td>
+      <td data-label="Hora">${r.hora}</td>
+      <td data-label="Dur." style="color:var(--texto-dim)">${durLbl}</td>
+      <td data-label="Cancha">${r.cancha}</td>
+      <td data-label="Cliente" style="font-weight:600">${r.cliente}</td>
+      <td data-label="Tel." style="color:var(--texto-dim)">${r.telefono}</td>
+      <td data-label="Total">${r.estado!=='cancelada'?$(r.monto):'—'}</td>
+      <td data-label="Seña/Saldo">${senaCell}</td>
+      <td data-label="Estado"><span class="badge ${r.estado}">${r.estado}</span></td>
+      <td data-label="Acciones"><div style="display:flex;gap:5px;align-items:center;flex-wrap:wrap">
         <button class="btn btn-sm" onclick="openEditModal(${r.id})" style="background:var(--azul-dim);border:1px solid var(--azul-borde);color:var(--blanco)">Editar</button>
-        <button onclick="eliminarRes(${r.id})" title="Eliminar definitivamente" style="background:rgba(239,68,68,.12);border:1px solid rgba(239,68,68,.3);border-radius:7px;color:var(--rojo);width:30px;height:30px;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;transition:background .15s;flex-shrink:0" onmouseover="this.style.background='rgba(239,68,68,.25)'" onmouseout="this.style.background='rgba(239,68,68,.12)'"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg></button>
+        <button onclick="eliminarRes(${r.id})" title="Eliminar" style="background:rgba(239,68,68,.12);border:1px solid rgba(239,68,68,.3);border-radius:7px;color:var(--rojo);width:30px;height:30px;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;transition:background .15s;flex-shrink:0" onmouseover="this.style.background='rgba(239,68,68,.25)'" onmouseout="this.style.background='rgba(239,68,68,.12)'"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg></button>
         ${r.estado!=='cancelada'
           ? `<button class="btn btn-danger btn-sm" onclick="cancelarRes(${r.id})">Cancelar</button>`
           : ''}
@@ -2573,13 +2630,13 @@ function renderHorariosFijos() {
           const pph = g.precio_hora || Math.round((g.monto||0)/g.duracion) || 0
           const etiqCell = `${g.etiqueta}${esCliente&&g.telefono?` <span style="color:var(--texto-dim);font-size:11px">· ${g.telefono}</span>`:''}${pph?` <span style="color:#4ade80;font-size:11px">${$(pph)}/h → ${$(pph*g.duracion)}/turno</span>`:''}`
           return `<tr>
-            <td>${badge}</td>
-            <td>${g.cancha}</td>
-            <td>${diasStr}</td>
-            <td>${g.horaInicio}</td>
-            <td>${dur}</td>
-            <td>${etiqCell}</td>
-            <td><div style="display:flex;gap:5px">
+            <td data-label="Tipo">${badge}</td>
+            <td data-label="Cancha">${g.cancha}</td>
+            <td data-label="Días">${diasStr}</td>
+            <td data-label="Inicio">${g.horaInicio}</td>
+            <td data-label="Dur.">${dur}</td>
+            <td data-label="Cliente/Etiqueta">${etiqCell}</td>
+            <td data-label="Acciones"><div style="display:flex;gap:5px;flex-wrap:wrap">
               <button class="btn btn-sm" onclick="openEditModalFijo(${JSON.stringify(g.ids).replace(/"/g,"'")})" style="background:var(--azul-dim);border:1px solid var(--azul-borde);color:var(--blanco)">Editar</button>
               <button class="btn btn-danger btn-sm" onclick="eliminarGrupoFijo(${JSON.stringify(g.ids).replace(/"/g,"'")})">Eliminar</button>
             </div></td>
