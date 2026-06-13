@@ -876,6 +876,32 @@
     .stats-band.in-view .stat-cell:nth-child(2) { animation-delay: .08s; }
     .stats-band.in-view .stat-cell:nth-child(3) { animation-delay: .16s; }
     .stats-band.in-view .stat-cell:nth-child(4) { animation-delay: .24s; }
+
+    /* ── PROMOS WEB ── */
+    #promos-web { background:var(--azul-deep); padding:60px 0 50px; }
+    .promos-header { text-align:center; margin-bottom:36px; }
+    .promos-badge { display:inline-flex; align-items:center; gap:6px; background:rgba(232,118,26,.12); border:1px solid rgba(232,118,26,.3); color:var(--naranja); font-size:11px; font-weight:700; padding:4px 14px; border-radius:20px; text-transform:uppercase; letter-spacing:.06em; margin-bottom:14px; }
+    .promos-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:18px; }
+    .promo-web-card { background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.1); border-radius:16px; padding:22px; cursor:pointer; transition:transform .22s cubic-bezier(.16,1,.3,1),box-shadow .22s,border-color .22s; position:relative; overflow:hidden; }
+    .promo-web-card::before { content:''; position:absolute; top:0; left:0; right:0; height:3px; background:linear-gradient(90deg,var(--naranja),#f59e0b); }
+    .promo-web-card:hover { transform:translateY(-4px); box-shadow:0 14px 40px rgba(0,0,0,.3); border-color:rgba(232,118,26,.35); }
+    .promo-web-tag { display:inline-flex; align-items:center; gap:4px; background:rgba(232,118,26,.15); color:var(--naranja); font-size:10px; font-weight:700; padding:3px 10px; border-radius:20px; text-transform:uppercase; letter-spacing:.04em; margin-bottom:10px; }
+    .promo-web-titulo { font-size:18px; font-weight:800; color:#fff; margin-bottom:6px; }
+    .promo-web-desc { font-size:13px; color:rgba(255,255,255,.6); margin-bottom:14px; line-height:1.5; }
+    .promo-web-precio-row { display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:10px; }
+    .promo-web-base { font-size:13px; color:rgba(255,255,255,.4); text-decoration:line-through; }
+    .promo-web-final { font-size:24px; font-weight:900; color:var(--naranja); }
+    .promo-web-ahorro { font-size:11px; font-weight:700; color:#22c55e; background:rgba(34,197,94,.12); padding:2px 8px; border-radius:20px; }
+    .promo-web-meta { font-size:12px; color:rgba(255,255,255,.4); line-height:1.6; }
+    .promo-web-cta { display:flex; align-items:center; justify-content:space-between; margin-top:16px; padding-top:14px; border-top:1px solid rgba(255,255,255,.08); gap:8px; }
+    .promo-web-cta-txt { font-size:12px; color:rgba(255,255,255,.5); }
+    .promo-web-btn { background:var(--naranja); color:#fff; border:none; border-radius:8px; padding:8px 16px; font-size:12px; font-weight:700; cursor:pointer; transition:background .15s; white-space:nowrap; }
+    .promo-web-btn:hover { background:#c96b0e; }
+    #promo-widget-banner { background:rgba(232,118,26,.12); border:1px solid rgba(232,118,26,.3); border-radius:10px; padding:10px 14px; margin-bottom:12px; font-size:13px; display:flex; align-items:center; gap:8px; }
+    @media(max-width:600px) {
+      .promos-grid { grid-template-columns:1fr; }
+      #promos-web { padding:40px 0 32px; }
+    }
   </style>
 </head>
 <body>
@@ -954,6 +980,18 @@
     </div>
   </div>
 </div>
+
+<!-- PROMOS WEB -->
+<section id="promos-web" style="display:none">
+  <div class="container">
+    <div class="promos-header">
+      <div class="promos-badge">🏷️ Tiempo Limitado</div>
+      <h2 class="h2" style="color:#fff">Nuestras <em>Promociones</em></h2>
+      <p style="color:rgba(255,255,255,.6);font-size:15px;max-width:480px;margin:10px auto 0">Aprovechá nuestros precios especiales. Hacé clic para reservar directamente con la promo aplicada.</p>
+    </div>
+    <div class="promos-grid" id="promos-grid"></div>
+  </div>
+</section>
 
 <!-- CANCHAS — crema -->
 <section id="canchas">
@@ -1699,6 +1737,17 @@ async function renderHoras() {
     bar.className = 'status-bar error'; stxt.textContent = 'Sin conexión — mostrando todos los horarios';
   }
   _renderGrid();
+  // Auto-seleccionar hora si hay una promo pendiente
+  if (window._promoAutoHora !== undefined) {
+    const ph = window._promoAutoHora;
+    window._promoAutoHora = undefined;
+    setTimeout(() => {
+      const target = fmtSlot(ph);
+      document.querySelectorAll('#hgrid .hora-btn').forEach(btn => {
+        if (!btn.disabled && btn.textContent.trim() === target) btn.click();
+      });
+    }, 60);
+  }
 }
 
 function canchaOcupadaEnRango(sheetData, canchaNum, horaInicio, duracion) {
@@ -2029,6 +2078,121 @@ if (statsBand) {
   }
   // Si ya es visible: no tocar nada, el HTML muestra el valor correcto directamente
 }
+
+// ── PROMOS WEB ──────────────────────────────────────────────
+let PROMOS_WEB = []
+
+async function cargarPromosActivas() {
+  try {
+    const { data, error } = await sbClient.from('promociones').select('*').eq('activa', true)
+    if (error || !data?.length) return
+    const hoy = new Date().toISOString().split('T')[0]
+    PROMOS_WEB = data.filter(p => {
+      if (p.tipo_dias === 'fecha') {
+        if (p.fecha_inicio && p.fecha_inicio > hoy) return false
+        if (p.fecha_fin   && p.fecha_fin   < hoy) return false
+      }
+      return true
+    })
+    if (!PROMOS_WEB.length) return
+    renderPromosWeb()
+    document.getElementById('promos-web').style.display = ''
+  } catch(e) { console.warn('promos:', e) }
+}
+
+function fmtMoneda(n) { return '$' + Math.round(n).toLocaleString('es-AR') }
+
+function renderPromosWeb() {
+  const DIAS = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado']
+  document.getElementById('promos-grid').innerHTML = PROMOS_WEB.map(p => {
+    const pFinal = p.precio_base && p.valor_descuento
+      ? (p.tipo_descuento === 'porcentaje' ? p.precio_base * (1 - p.valor_descuento / 100) : p.valor_descuento)
+      : null
+    const ahorro  = p.precio_base && pFinal ? p.precio_base - pFinal : null
+    const descTag = p.tipo_descuento === 'porcentaje' ? `${p.valor_descuento}% OFF` : 'Precio especial'
+    const rangoStr = p.tipo_dias === 'recurrente' && p.dias_semana?.length
+      ? 'Todos los ' + p.dias_semana.map(d => DIAS[d]).join(', ')
+      : (p.fecha_inicio ? `Del ${p.fecha_inicio}${p.fecha_fin ? ' al ' + p.fecha_fin : ''}` : '')
+    return `
+    <div class="promo-web-card" onclick="clickPromoWeb('${p.id}')">
+      <div class="promo-web-tag">🏷️ ${descTag}</div>
+      <div class="promo-web-titulo">${p.titulo}</div>
+      ${p.descripcion ? `<div class="promo-web-desc">${p.descripcion}</div>` : ''}
+      ${p.precio_base ? `
+      <div class="promo-web-precio-row">
+        <span class="promo-web-base">${fmtMoneda(p.precio_base)}</span>
+        <span class="promo-web-final">${fmtMoneda(pFinal)}</span>
+        ${ahorro ? `<span class="promo-web-ahorro">Ahorrás ${fmtMoneda(ahorro)}</span>` : ''}
+      </div>` : ''}
+      <div class="promo-web-meta">
+        📅 ${rangoStr}<br>
+        🕐 ${p.hora_inicio}${p.hora_fin ? ' – ' + p.hora_fin : ''}
+      </div>
+      <div class="promo-web-cta">
+        <span class="promo-web-cta-txt">Hacé clic para reservar con esta promo</span>
+        <button class="promo-web-btn">Reservar</button>
+      </div>
+    </div>`
+  }).join('')
+}
+
+function clickPromoWeb(id) {
+  const p = PROMOS_WEB.find(x => x.id === id)
+  if (!p) return
+
+  // Calcular la fecha más próxima de esta promo
+  let fechaTarget = null
+  const hoy = new Date(); hoy.setHours(0,0,0,0)
+  if (p.tipo_dias === 'recurrente' && p.dias_semana?.length) {
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(hoy); d.setDate(hoy.getDate() + i)
+      if (p.dias_semana.includes(d.getDay())) {
+        fechaTarget = d.toISOString().split('T')[0]; break
+      }
+    }
+  } else if (p.tipo_dias === 'fecha' && p.fecha_inicio) {
+    const ini = new Date(p.fecha_inicio + 'T12:00:00')
+    fechaTarget = ini >= hoy ? p.fecha_inicio : hoy.toISOString().split('T')[0]
+  }
+
+  // Hora numérica para auto-selección
+  if (p.hora_inicio) {
+    const [hh, mm] = p.hora_inicio.split(':').map(Number)
+    window._promoAutoHora = hh + (mm || 0) / 60
+  }
+
+  // Scroll al widget
+  document.getElementById('reservas').scrollIntoView({ behavior: 'smooth' })
+
+  // Setear fecha y disparar carga (pequeño delay para que el scroll empiece)
+  if (fechaTarget) {
+    setTimeout(() => {
+      const el = document.getElementById('fecha')
+      el.value = fechaTarget
+      onFecha()
+    }, 150)
+  }
+
+  // Mostrar banner en el widget
+  mostrarBannerPromo(p)
+}
+
+function mostrarBannerPromo(p) {
+  let banner = document.getElementById('promo-widget-banner')
+  if (!banner) {
+    banner = document.createElement('div')
+    banner.id = 'promo-widget-banner'
+    const widgetBody = document.querySelector('.widget-body')
+    if (widgetBody) widgetBody.insertBefore(banner, widgetBody.firstChild)
+  }
+  const pFinal = p.precio_base && p.valor_descuento
+    ? (p.tipo_descuento === 'porcentaje' ? p.precio_base * (1 - p.valor_descuento / 100) : p.valor_descuento)
+    : null
+  const precioStr = pFinal ? ` · <strong>${fmtMoneda(pFinal)}</strong>` : ''
+  banner.innerHTML = `🏷️ <strong>${p.titulo}</strong>${precioStr}`
+}
+
+cargarPromosActivas()
 
 // ── PARALLAX suave en hero ───────────────────────────
 const heroInner = document.querySelector('.hero-inner');
