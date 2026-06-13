@@ -420,8 +420,18 @@
       /* Selector de día en Hoy */
       #section-hoy > div:first-child { flex-wrap:wrap; gap:8px; }
 
-      /* Composición financiero */
-      #fin-tipos .grid { grid-template-columns:1fr !important; }
+      /* Ocupación: título largo */
+      #ocup-heatmap-title {
+        white-space:normal; word-break:break-word;
+        flex-basis:100%; order:-1;
+      }
+      /* Heatmap: scroll horizontal */
+      #section-ocupacion .card { overflow:visible; }
+      #heatmap { overflow-x:auto; -webkit-overflow-scrolling:touch; max-width:calc(100vw - 40px); }
+      .heatmap { gap:2px; }
+      .hm-cell { height:26px; font-size:9px; }
+      .hm-time { font-size:9px; }
+      .hm-head { font-size:9px; padding:3px 1px; }
     }
 
     @media(min-width:801px) { #mobile-menu-btn { display:none; } }
@@ -1718,9 +1728,15 @@ function renderFinanciero() {
   // Actualizar título del gráfico
   const t1 = document.querySelector('#c-ing14')?.closest('.chart-card')?.querySelector('.chart-t')
   if(t1) t1.textContent = esMesActual ? 'Ingresos últimos 14 días' : `Ingresos por día — ${mesNom}`
+  const isMob = window.innerWidth < 800
   charts['c-ing14']=new Chart(document.getElementById('c-ing14').getContext('2d'),{
     type:'bar', data:{labels:l14,datasets:[{data:d14,backgroundColor:'rgba(232,118,26,.7)',borderColor:'#E8761A',borderWidth:1,borderRadius:4}]},
-    options:{...cOpts,plugins:{legend:{display:false}}}
+    options:{...cOpts,plugins:{legend:{display:false}},
+      scales:{...cOpts.scales,
+        x:{...cOpts.scales.x, ticks:{...cOpts.scales.x.ticks, maxTicksLimit: isMob ? 7 : 31, maxRotation:0}},
+        y:{...cOpts.scales.y}
+      }
+    }
   })
 
   // Chart 2: mes actual vs mes anterior — barras agrupadas por semana
@@ -1738,10 +1754,10 @@ function renderFinanciero() {
   charts['c-mvm']=new Chart(document.getElementById('c-mvm').getContext('2d'),{
     type:'bar',
     data:{labels:semanas,datasets:[
-      {label:mesNom,    data:dMSem,  backgroundColor:'rgba(232,118,26,.8)', borderRadius:5, borderSkipped:false},
-      {label:'Mes ant.',data:dMASem, backgroundColor:'rgba(255,255,255,.15)', borderRadius:5, borderSkipped:false}
+      {label:mesNom,    data:dMSem,  backgroundColor:'rgba(232,118,26,.8)', borderRadius:5, borderSkipped:false, maxBarThickness: isMob?40:80},
+      {label:'Mes ant.',data:dMASem, backgroundColor:'rgba(255,255,255,.15)', borderRadius:5, borderSkipped:false, maxBarThickness: isMob?40:80}
     ]},
-    options:{...cOpts, plugins:{legend:{labels:{color:'rgba(255,255,255,.55)',font:{family:"'Plus Jakarta Sans'",size:11}}}}}
+    options:{...cOpts, plugins:{legend:{labels:{color:'rgba(255,255,255,.55)',font:{family:"'Plus Jakarta Sans'",size: isMob?9:11}}}}}
   })
 
   // Chart 3: por cancha
@@ -1750,7 +1766,7 @@ function renderFinanciero() {
   charts['c-cancha']=new Chart(document.getElementById('c-cancha').getContext('2d'),{
     type:'doughnut',
     data:{labels:CANCHAS,datasets:[{data:dCancha,backgroundColor:['#E8761A','#2563B0','#22c55e','#a855f7'],borderWidth:0}]},
-    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{color:'rgba(255,255,255,.55)',font:{family:"'Plus Jakarta Sans'"},padding:12,boxWidth:12}}}}
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{color:'rgba(255,255,255,.55)',font:{family:"'Plus Jakarta Sans'",size: isMob?10:12},padding: isMob?8:12,boxWidth: isMob?10:12}}}}
   })
 
   // Breakdown por tipo (reservas normales / fijo cliente / clases)
@@ -1768,7 +1784,7 @@ function renderFinanciero() {
   ]
   document.getElementById('fin-tipos').innerHTML = `
     <div class="chart-t" style="margin-bottom:16px">Composición de ingresos — ${mesNom}</div>
-    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px">
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:16px">
       ${tiposData.map(t=>`
         <div style="background:var(--azul-dark);border:1px solid var(--borde-2);border-radius:10px;padding:16px">
           <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
