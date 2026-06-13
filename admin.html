@@ -294,6 +294,7 @@
       .tb-title { font-size:17px; }
     }
     @media(min-width:801px) { #mobile-menu-btn { display:none; } }
+    #sb-overlay { display:none; }
     #mobile-menu-btn {
       align-items:center; justify-content:center;
       width:38px; height:38px; border-radius:9px;
@@ -2907,4 +2908,48 @@ function renderMenuAdmin() {
           ${rows || '<div style="padding:10px 14px;font-size:12px;color:var(--texto-dim)">Sin ítems</div>'}
         </div>
         <div class="menu-add-row">
-      
+          <input class="menu-add-inp" id="inp-${cat.id}" placeholder="Nuevo plato..." onkeydown="if(event.key==='Enter')addMenuItem('${cat.id}')">
+          <button class="menu-add-btn" onclick="addMenuItem('${cat.id}')">+ Agregar</button>
+        </div>
+      </div>`
+  }).join('')
+}
+
+async function toggleMenuItem(id, activo) {
+  if (isDemoMode) return
+  const { error } = await sbClient.from('menu_items').update({ activo }).eq('id', id)
+  if (error) { alert('Error: ' + error.message); return }
+  const item = MENU_ITEMS.find(i => i.id === id)
+  if (item) item.activo = activo
+  renderMenuAdmin()
+}
+
+async function deleteMenuItem(id, nombre) {
+  if (!confirm(`¿Eliminar "${nombre}" del menú?`)) return
+  if (isDemoMode) { MENU_ITEMS = MENU_ITEMS.filter(i => i.id !== id); renderMenuAdmin(); return }
+  const { error } = await sbClient.from('menu_items').delete().eq('id', id)
+  if (error) { alert('Error: ' + error.message); return }
+  MENU_ITEMS = MENU_ITEMS.filter(i => i.id !== id)
+  renderMenuAdmin()
+}
+
+async function addMenuItem(catId) {
+  const inp = document.getElementById('inp-' + catId)
+  const nombre = inp?.value.trim()
+  if (!nombre) return
+  const orden = MENU_ITEMS.filter(i => i.categoria === catId).length + 1
+  if (isDemoMode) {
+    MENU_ITEMS.push({ id: Date.now(), categoria: catId, nombre, nota: null, activo: true, orden })
+    renderMenuAdmin()
+    return
+  }
+  const { data, error } = await sbClient.from('menu_items')
+    .insert({ categoria: catId, nombre, activo: true, orden })
+    .select().single()
+  if (error) { alert('Error: ' + error.message); return }
+  MENU_ITEMS.push(data)
+  renderMenuAdmin()
+}
+</script>
+</body>
+</html>
